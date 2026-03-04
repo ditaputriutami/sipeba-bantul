@@ -78,7 +78,7 @@ include BASE_PATH . '/includes/sidebar.php';
               </div>
               <div class="mb-3">
                 <label class="form-label">Satuan <span class="text-danger">*</span></label>
-                <input type="text" name="satuan" class="form-control" value="<?=htmlspecialchars($editItem['satuan']??'')?>" placeholder="Rim, Buah, Kotak..." required>
+                <input type="text" name="satuan" class="form-control" value="<?=htmlspecialchars($editItem['satuan']??'')?>" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Jenis Barang <span class="text-danger">*</span></label>

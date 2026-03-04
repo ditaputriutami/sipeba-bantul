@@ -71,11 +71,11 @@ include BASE_PATH . '/includes/sidebar.php';
               <?php if($editItem): ?><input type="hidden" name="id" value="<?=$editItem['id']?>"><?php endif; ?>
               <div class="mb-3">
                 <label class="form-label">Kode Jenis <span class="text-danger">*</span></label>
-                <input type="text" name="kode_jenis" class="form-control" value="<?=htmlspecialchars($editItem['kode_jenis']??'')?>" placeholder="Contoh: ATK" required maxlength="10">
+                <input type="text" name="kode_jenis" class="form-control" value="<?=htmlspecialchars($editItem['kode_jenis']??'')?>" >
               </div>
               <div class="mb-3">
                 <label class="form-label">Nama Jenis <span class="text-danger">*</span></label>
-                <input type="text" name="nama_jenis" class="form-control" value="<?=htmlspecialchars($editItem['nama_jenis']??'')?>" placeholder="Contoh: Alat Tulis Kantor" required>
+                <input type="text" name="nama_jenis" class="form-control" value="<?=htmlspecialchars($editItem['nama_jenis']??'')?>" required>
               </div>
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>Simpan</button>
