@@ -72,7 +72,7 @@ include BASE_PATH . '/includes/sidebar.php';
         <table class="table" id="penTable">
           <thead>
             <tr>
-              <th>#</th><th>No. Faktur</th><th>Tanggal</th><th>Nama Barang</th>
+              <th>#</th><th>No. Faktur</th><th>Tanggal</th><th>Dari / Pemasok</th><th>Nama Barang</th>
               <th>Jumlah</th><th>Harga Satuan</th><th>Total</th>
               <?php if($role==='superadmin'): ?><th>Bagian</th><?php endif; ?>
               <th>Status</th><th>Aksi</th>
@@ -84,6 +84,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <td><?=$no++?></td>
               <td><code><?=htmlspecialchars($p['no_faktur'])?></code></td>
               <td><?=formatTanggal($p['tanggal'])?></td>
+              <td><?=htmlspecialchars($p['dari'] ?? '')?></td>
               <td><?=htmlspecialchars($p['nama_barang'])?></td>
               <td><?=number_format($p['jumlah'])?> <?=htmlspecialchars($p['satuan'])?></td>
               <td><?=formatRupiah($p['harga_satuan'])?></td>

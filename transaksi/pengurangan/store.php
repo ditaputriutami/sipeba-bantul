@@ -29,9 +29,8 @@ $tgl_penyerahan    = $_POST['tanggal_penyerahan'] ?? null;
 $id_bagian         = ($role === 'superadmin') ? (int)$_POST['id_bagian'] : (int)getUserBagian();
 $id_user           = getUserId();
 
-// ---- Validasi dasar ----
+// ---- Validasi dasar// Validasi
 $errors = [];
-if (!$no_permintaan) $errors[] = 'No. Permintaan wajib diisi.';
 if (!$id_barang)     $errors[] = 'Barang wajib dipilih.';
 if ($jumlah < 1)     $errors[] = 'Jumlah minimal 1.';
 if (!$id_bagian)     $errors[] = 'Bagian wajib diisi.';

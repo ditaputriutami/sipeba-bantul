@@ -28,7 +28,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">No. Faktur / Dokumen <span class="text-danger">*</span></label>
-              <input type="text" name="no_faktur" class="form-control" placeholder="Contoh: INV/2024/001" required>
+              <input type="text" name="no_faktur" class="form-control" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Tanggal Faktur <span class="text-danger">*</span></label>
@@ -62,6 +62,14 @@ include BASE_PATH . '/includes/sidebar.php';
             <div class="col-md-6">
               <label class="form-label">No. Bukti Penerimaan</label>
               <input type="text" name="no_bukti_penerimaan" class="form-control" placeholder="Contoh: BP/2024/001">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tanggal Bukti Penerimaan</label>
+              <input type="date" name="tanggal_bukti_penerimaan" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">DARI (Pemasok/Sumber)</label>
+              <input type="text" name="dari" class="form-control" placeholder="Nama supplier/dinas">
             </div>
             <?php if($role==='superadmin'): ?>
             <div class="col-md-6">

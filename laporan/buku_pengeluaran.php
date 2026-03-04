@@ -22,37 +22,110 @@ if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
 
 // Join dengan detail FIFO untuk tahu harga (ambil rata-rata tertimbang jika multi-batch)
 $data = $conn->query("
-    SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.penerima, p.tanggal_penyerahan,
+    SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.penerima, p.tanggal_penyerahan, p.keterangan,
            b.kode_barang, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_input,
+           j.nama_jenis, j.kode_jenis,
            COALESCE((SELECT SUM(pd.jumlah_dipotong * pd.harga_satuan) / SUM(pd.jumlah_dipotong) FROM pengurangan_detail pd WHERE pd.id_pengurangan=p.id), 0) as harga_rata_rata,
            COALESCE((SELECT SUM(pd.jumlah_dipotong * pd.harga_satuan) FROM pengurangan_detail pd WHERE pd.id_pengurangan=p.id), 0) as total_nilai
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id
+    JOIN jenis_barang j ON b.id_jenis_barang=j.id
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where
-    ORDER BY p.tanggal ASC, p.id ASC
+    ORDER BY j.id ASC, b.id ASC, p.tanggal ASC, p.id ASC
 ");
 
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
 // Export Excel
 if (isset($_GET['export'])) {
-    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-    header('Content-Disposition: attachment; filename="buku_pengeluaran_' . date('Ymd') . '.xls"');
-    echo "\xEF\xBB\xBF";
-    echo "BUKU PENGELUARAN BARANG PERSEDIAAN\t\t\t\t\t\t\n";
-    echo "Periode: $f_dari s.d. $f_sampai\t\t\t\t\t\t\n\n";
-    echo "No\tTanggal\tNama Barang\tKode Barang\tJumlah\tSatuan\tHarga Satuan (FIFO) (Rp)\tTotal Nilai (Rp)\tPenerima\tTanggal Penyerahan\n";
-    $no = 1; $totalNilai = 0;
-    $data->data_seek(0);
-    while ($r = $data->fetch_assoc()) {
+  header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+  header('Content-Disposition: attachment; filename="buku_pengeluaran_' . date('Ymd') . '.xls"');
+  header('Pragma: no-cache');
+  echo "\xEF\xBB\xBF"; 
+
+  // Sort data for grouping
+  $exportData = [];
+  $data->data_seek(0);
+  while ($r = $data->fetch_assoc()) $exportData[] = $r;
+  usort($exportData, function ($a, $b) {
+    if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
+    return strcmp($a['kode_jenis'], $b['kode_jenis']);
+  });
+?>
+  <table border="1" cellpadding="3" cellspacing="0">
+    <thead>
+      <tr><th colspan="12" style="text-align:center; font-size:14pt; font-weight:bold; border:none;">BUKU PENGELUARAN BARANG PERSEDIAAN</th></tr>
+      <tr><th colspan="12" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th></tr>
+      <tr><th colspan="12" style="border:none;"></th></tr>
+      <tr>
+        <th rowspan="2">NO</th>
+        <th rowspan="2">TANGGAL PENGELUARAN BARANG</th>
+        <th colspan="2" rowspan="2">JENIS/NAMA BARANG</th>
+        <th rowspan="2">KODE BARANG</th>
+        <th rowspan="2">NOMOR</th>
+        <th rowspan="2">BANYAKNYA</th>
+        <th rowspan="2">SATUAN</th>
+        <th rowspan="2">HARGA SATUAN (RP)</th>
+        <th rowspan="2">JUMLAH HARGA (RP)</th>
+        <th rowspan="2">TANGGAL PENYERAHAN BARANG</th>
+        <th rowspan="2">KETERANGAN</th>
+      </tr>
+      <tr></tr>
+      <tr>
+        <?php for ($i = 1; $i <= 12; $i++) echo "<th style='text-align:center;'>$i</th>"; ?>
+      </tr>
+    </thead>
+    <tbody>
+      <?php
+      $jenis_no = 1;
+      $current_jenis = null;
+      $totalNilai = 0;
+      $totalQty = 0;
+      foreach ($exportData as $r) {
         $totalNilai += $r['total_nilai'];
-        echo "$no\t{$r['tanggal']}\t{$r['nama_barang']}\t{$r['kode_barang']}\t{$r['jumlah']}\t{$r['satuan']}\t{$r['harga_rata_rata']}\t{$r['total_nilai']}\t{$r['penerima']}\t{$r['tanggal_penyerahan']}\n";
-        $no++;
-    }
-    echo "TOTAL\t\t\t\t\t\t\t$totalNilai\t\t\n";
-    exit;
+        $totalQty += $r['jumlah'];
+        if ($current_jenis !== $r['kode_jenis']) {
+          $current_jenis = $r['kode_jenis'];
+      ?>
+          <tr style="font-weight:bold; background-color:#f8f9fa;">
+            <td style="text-align:center;"><?= $jenis_no++ ?></td>
+            <td></td>
+            <td></td>
+            <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
+            <td style="mso-number-format:'\@'; text-align:center;"><?= htmlspecialchars($r['kode_jenis'] ?? '') ?></td>
+            <td colspan="7"></td>
+          </tr>
+        <?php } ?>
+        <tr>
+          <td></td>
+          <td style="mso-number-format:'yyyy\-mm\-dd';"><?= htmlspecialchars($r['tanggal']) ?></td>
+          <td style="text-align:center;">-</td>
+          <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+          <td style="mso-number-format:'\@'; text-align:center;"><?= htmlspecialchars($r['kode_barang']) ?></td>
+          <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
+          <td style="text-align:center;"><?= number_format($r['jumlah'], 0, '', '') ?></td>
+          <td><?= htmlspecialchars($r['satuan']) ?></td>
+          <td style="text-align:right;"><?= number_format($r['harga_rata_rata'], 0, '', '') ?></td>
+          <td style="text-align:right;"><?= number_format($r['total_nilai'], 0, '', '') ?></td>
+          <td style="mso-number-format:'yyyy\-mm\-dd';"><?= htmlspecialchars($r['tanggal_penyerahan']) ?></td>
+          <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+        </tr>
+      <?php } ?>
+    </tbody>
+    <tfoot>
+      <tr style="font-weight:bold; background-color:#e9ecef;">
+        <td colspan="6" style="text-align:right;">TOTAL</td>
+        <td style="text-align:center;"><?= number_format($totalQty, 0, '', '') ?></td>
+        <td colspan="2"></td>
+        <td style="text-align:right;"><?= number_format($totalNilai, 0, '', '') ?></td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+<?php
+  exit;
 }
 
 include BASE_PATH . '/includes/header.php';
@@ -99,35 +172,77 @@ include BASE_PATH . '/includes/sidebar.php';
         <div class="text-muted" style="font-size:.85rem">Periode: <?=formatTanggal($f_dari)?> s.d. <?=formatTanggal($f_sampai)?></div>
       </div>
       <div class="table-wrapper">
-        <table class="table table-bordered table-sm" style="font-size:.82rem">
-          <thead>
-            <tr class="table-warning text-center">
-              <th>No</th><th>Tanggal</th><th>Nama Barang</th><th>Kode Barang</th>
-              <th>Jumlah</th><th>Satuan</th><th>Harga Satuan (FIFO)</th><th>Total Nilai</th>
-              <th>Penerima</th><th>Tanggal Penyerahan</th>
+        <table class="table table-bordered table-sm align-middle" style="font-size:.82rem; white-space:nowrap;">
+          <thead class="table-warning text-center align-middle">
+            <tr>
+              <th rowspan="2">NO</th>
+              <th rowspan="2">TANGGAL PENGELUARAN BARANG</th>
+              <th colspan="2" rowspan="2">JENIS/NAMA BARANG</th>
+              <th rowspan="2">KODE BARANG</th>
+              <th rowspan="2">NOMOR</th>
+              <th rowspan="2">BANYAKNYA</th>
+              <th rowspan="2">SATUAN</th>
+              <th rowspan="2">HARGA SATUAN (RP)</th>
+              <th rowspan="2">JUMLAH HARGA (RP)</th>
+              <th rowspan="2">TANGGAL PENYERAHAN BARANG</th>
+              <th rowspan="2">KETERANGAN</th>
             </tr>
+            <tr></tr>
           </thead>
           <tbody>
-            <?php $no=1; $totalNilai=0; $found=false; while($r=$data->fetch_assoc()): $found=true; $totalNilai+=$r['total_nilai']; ?>
+            <?php 
+              // Prepare HTML data for consistent grouping by kode_jenis
+              $htmlData = [];
+              $data->data_seek(0);
+              while($r=$data->fetch_assoc()) $htmlData[] = $r;
+              usort($htmlData, function($a, $b){
+                if($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
+                return strcmp($a['kode_jenis'], $b['kode_jenis']);
+              });
+
+              $totalNilai=0; $totalQty=0; $found=false; 
+              $current_jenis = null;
+              $jenis_no = 1;
+              foreach($htmlData as $r): 
+                $found=true; 
+                $totalNilai+=$r['total_nilai']; 
+                $totalQty+=$r['jumlah']; 
+                
+                if ($current_jenis !== $r['kode_jenis']):
+                  $current_jenis = $r['kode_jenis'];
+            ?>
+            <tr class="table-light fw-bold">
+              <td class="text-center"><?=$jenis_no++?></td>
+              <td></td>
+              <td class="text-center"></td>
+              <td><?=htmlspecialchars($r['nama_jenis'])?></td>
+              <td class="text-center"><?=htmlspecialchars($r['kode_jenis'] ?? '')?></td>
+              <td colspan="7"></td>
+            </tr>
+            <?php endif; ?>
             <tr>
-              <td class="text-center"><?=$no++?></td>
+              <td></td>
               <td><?=formatTanggal($r['tanggal'])?></td>
+              <td class="text-center">-</td>
               <td><?=htmlspecialchars($r['nama_barang'])?></td>
-              <td class="text-center"><code><?=htmlspecialchars($r['kode_barang'])?></code></td>
+              <td class="text-center"><?=htmlspecialchars($r['kode_barang'])?></td>
+              <td><?=htmlspecialchars($r['no_permintaan'])?></td>
               <td class="text-center"><?=number_format($r['jumlah'])?></td>
               <td class="text-center"><?=htmlspecialchars($r['satuan'])?></td>
-              <td class="text-end"><?=formatRupiah($r['harga_rata_rata'])?><br><small class="text-muted">(rata-rata FIFO)</small></td>
+              <td class="text-end"><?=formatRupiah($r['harga_rata_rata'])?></td>
               <td class="text-end fw-semibold"><?=formatRupiah($r['total_nilai'])?></td>
-              <td><?=htmlspecialchars($r['penerima']??'—')?></td>
               <td><?=$r['tanggal_penyerahan']?formatTanggal($r['tanggal_penyerahan']):'—'?></td>
+              <td><?=htmlspecialchars($r['keterangan']??'—')?></td>
             </tr>
-            <?php endwhile; if(!$found): ?>
-            <tr><td colspan="10" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data pengeluaran.</td></tr>
+            <?php endforeach; if(!$found): ?>
+            <tr><td colspan="12" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data pengeluaran.</td></tr>
             <?php endif; ?>
           </tbody>
           <?php if($found): ?>
           <tfoot><tr class="table-secondary fw-bold">
-            <td colspan="7" class="text-end">TOTAL NILAI PENGELUARAN</td>
+            <td colspan="6" class="text-end">TOTAL</td>
+            <td class="text-center"><?=number_format($totalQty)?></td>
+            <td colspan="2"></td>
             <td class="text-end text-danger"><?=formatRupiah($totalNilai)?></td>
             <td colspan="2"></td>
           </tr></tfoot>

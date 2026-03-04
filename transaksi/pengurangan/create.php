@@ -33,8 +33,8 @@ include BASE_PATH . '/includes/sidebar.php';
         <form method="POST" action="store.php" id="pengForm">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">No. Permintaan <span class="text-danger">*</span></label>
-              <input type="text" name="no_permintaan" class="form-control" placeholder="Contoh: PERM/2024/001" required>
+              <label class="form-label">No. Permintaan / Nomor</label>
+              <input type="text" name="no_permintaan" class="form-control" placeholder="Contoh: PERM/2024/001">
             </div>
             <div class="col-md-6">
               <label class="form-label">Tanggal <span class="text-danger">*</span></label>
