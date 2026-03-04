@@ -45,7 +45,7 @@ function isActive(string $path): string {
     <!-- DASHBOARD -->
     <div class="menu-group">
       <span class="menu-label">Utama</span>
-      <a href="<?= BASE_URL ?>/<?= $role === 'superadmin' ? 'admin' : $role ?>/dashboard.php"
+      <a href="<?= BASE_URL ?>/dashboard.php"
          class="menu-item <?= isActive('/dashboard.php') ?>">
         <i class="bi bi-speedometer2"></i><span>Dashboard</span>
       </a>
@@ -54,14 +54,14 @@ function isActive(string $path): string {
     <!-- MASTER DATA -->
     <div class="menu-group">
       <span class="menu-label">Master Data</span>
-      <a href="<?= BASE_URL ?>/admin/barang/index.php" class="menu-item <?= isActive('/admin/barang/') ?>">
+      <a href="<?= BASE_URL ?>/master_data/barang/index.php" class="menu-item <?= isActive('/barang/') ?>">
         <i class="bi bi-archive"></i><span>Data Barang</span>
       </a>
-      <a href="<?= BASE_URL ?>/admin/jenis_barang/index.php" class="menu-item <?= isActive('/jenis_barang/') ?>">
+      <a href="<?= BASE_URL ?>/master_data/jenis_barang/index.php" class="menu-item <?= isActive('/jenis_barang/') ?>">
         <i class="bi bi-tags"></i><span>Jenis Barang</span>
       </a>
       <?php if ($role === 'superadmin'): ?>
-      <a href="<?= BASE_URL ?>/admin/users/index.php" class="menu-item <?= isActive('/users/') ?>">
+      <a href="<?= BASE_URL ?>/master_data/users/index.php" class="menu-item <?= isActive('/users/') ?>">
         <i class="bi bi-people"></i><span>Manajemen User</span>
       </a>
       <?php endif; ?>
@@ -71,13 +71,13 @@ function isActive(string $path): string {
     <!-- TRANSAKSI (PENGURUS) -->
     <div class="menu-group">
       <span class="menu-label">Transaksi</span>
-      <a href="<?= BASE_URL ?>/pengurus/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
+      <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
         <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
       </a>
-      <a href="<?= BASE_URL ?>/pengurus/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
+      <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
         <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
       </a>
-      <a href="<?= BASE_URL ?>/pengurus/stock_opname/index.php" class="menu-item <?= isActive('/pengurus/stock_opname/') ?>">
+      <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
         <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
       </a>
     </div>
@@ -87,7 +87,7 @@ function isActive(string $path): string {
     <!-- PERSETUJUAN (KEPALA) -->
     <div class="menu-group">
       <span class="menu-label">Persetujuan</span>
-      <a href="<?= BASE_URL ?>/kepala/approval/index.php" class="menu-item <?= isActive('/approval/') ?>">
+      <a href="<?= BASE_URL ?>/persetujuan/transaksi/index.php" class="menu-item <?= isActive('/persetujuan/transaksi/') ?>">
         <i class="bi bi-check2-square"></i><span>Approval Transaksi</span>
         <?php
         // Count pending
@@ -100,16 +100,16 @@ function isActive(string $path): string {
           <span class="badge bg-danger ms-auto"><?= $pendingCount ?></span>
         <?php endif; ?>
       </a>
-      <a href="<?= BASE_URL ?>/kepala/stock_opname/index.php" class="menu-item <?= isActive('/kepala/stock_opname/') ?>">
+      <a href="<?= BASE_URL ?>/persetujuan/stock_opname/index.php" class="menu-item <?= isActive('/persetujuan/stock_opname/') ?>">
         <i class="bi bi-clipboard2-pulse"></i><span>Approval Stock Opname</span>
       </a>
     </div>
     <div class="menu-group">
       <span class="menu-label">Transaksi</span>
-      <a href="<?= BASE_URL ?>/pengurus/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
+      <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
         <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
       </a>
-      <a href="<?= BASE_URL ?>/pengurus/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
+      <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
         <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
       </a>
     </div>

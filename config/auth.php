@@ -59,22 +59,13 @@ function requireRole($roles): void {
 }
 
 /**
- * Redirect user ke dashboard sesuai rolenya
+ * Redirect user ke dashboard
  */
 function redirectByRole(): void {
-    $role = getUserRole();
-    switch ($role) {
-        case 'superadmin':
-            header('Location: ' . BASE_URL . '/admin/dashboard.php');
-            break;
-        case 'kepala':
-            header('Location: ' . BASE_URL . '/kepala/dashboard.php');
-            break;
-        case 'pengurus':
-            header('Location: ' . BASE_URL . '/pengurus/dashboard.php');
-            break;
-        default:
-            header('Location: ' . BASE_URL . '/login.php');
+    if (isLoggedIn()) {
+        header('Location: ' . BASE_URL . '/dashboard.php');
+    } else {
+        header('Location: ' . BASE_URL . '/login.php');
     }
     exit;
 }

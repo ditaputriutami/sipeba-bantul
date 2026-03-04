@@ -1,4 +1,7 @@
 <?php
-require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/config/bootstrap.php';
 requireLogin();
-redirectByRole();
+
+// Redirect to unified dashboard
+header("Location: ".BASE_URL."/dashboard.php");
+exit;
