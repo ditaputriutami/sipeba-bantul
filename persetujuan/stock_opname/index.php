@@ -51,7 +51,7 @@ include BASE_PATH . '/includes/sidebar.php';
       <div class="card-header"><i class="bi bi-list me-2"></i>Daftar Stock Opname</div>
       <div class="table-wrapper">
         <table class="table table-sm">
-          <thead><tr><th>#</th><th>Tanggal</th><th>Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Oleh</th><th>Status</th><th>Aksi</th></tr></thead>
+          <thead><tr><th>#</th><th>Tanggal</th><th>Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Keterangan</th><th>Oleh</th><th>Status</th><th>Aksi</th></tr></thead>
           <tbody>
             <?php $no=1; while($s=$list->fetch_assoc()): ?>
             <tr class="<?=$s['status']==='pending'?'table-warning':''?>">
@@ -63,6 +63,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <td class="text-center fw-bold <?=$s['selisih']>0?'text-success':($s['selisih']<0?'text-danger':'')?>">
                 <?=($s['selisih']>0?'+':'').number_format($s['selisih'])?>
               </td>
+              <td><small><?=htmlspecialchars($s['keterangan'])?></small></td>
               <td><?=htmlspecialchars($s['nama_input'])?></td>
               <td>
                 <?php $sc=['pending'=>'badge-pending','disetujui'=>'badge-approved','ditolak'=>'badge-rejected']; ?>

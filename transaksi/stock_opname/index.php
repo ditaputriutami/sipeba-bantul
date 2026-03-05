@@ -6,8 +6,9 @@ $user = getCurrentUser();
 $role = getUserRole();
 $id_bagian = getUserBagian();
 
-// Handle store
+// Handle store / update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id_edit    = (int)($_POST['id_edit'] ?? 0);
     $tanggal    = $_POST['tanggal'] ?? date('Y-m-d');
     $id_barang  = (int)($_POST['id_barang'] ?? 0);
     $stok_fisik = (int)($_POST['stok_fisik'] ?? 0);
@@ -18,12 +19,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Ambil stok sistem
     $stok_sistem = (int)$conn->query("SELECT COALESCE(stok,0) FROM stok_current WHERE id_barang=$id_barang AND id_bagian=$bag")->fetch_row()[0];
 
-    $stmt = $conn->prepare("INSERT INTO stock_opname (tanggal,id_barang,id_bagian,stok_sistem,stok_fisik,keterangan,id_user,status) VALUES(?,?,?,?,?,?,?,'pending')");
-    $stmt->bind_param('siiiiis',$tanggal,$id_barang,$bag,$stok_sistem,$stok_fisik,$keterangan,$id_user);
-    if($stmt->execute()) setFlash('success','Stock Opname berhasil disimpan. Menunggu persetujuan Kepala.');
-    else setFlash('error','Gagal: '.$conn->error);
+    if ($id_edit > 0) {
+        $stmt = $conn->prepare("UPDATE stock_opname SET tanggal=?, id_barang=?, id_bagian=?, stok_sistem=?, stok_fisik=?, keterangan=? WHERE id=?");
+        $stmt->bind_param('siiiisi', $tanggal, $id_barang, $bag, $stok_sistem, $stok_fisik, $keterangan, $id_edit);
+        if($stmt->execute()) setFlash('success', 'Stock Opname berhasil diperbarui.');
+        else setFlash('error', 'Gagal memperbarui: ' . $conn->error);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO stock_opname (tanggal,id_barang,id_bagian,stok_sistem,stok_fisik,keterangan,id_user,status) VALUES(?,?,?,?,?,?,?,'pending')");
+        $stmt->bind_param('siiiisi', $tanggal, $id_barang, $bag, $stok_sistem, $stok_fisik, $keterangan, $id_user);
+        if($stmt->execute()) setFlash('success', 'Stock Opname berhasil disimpan. Menunggu persetujuan Kepala.');
+        else setFlash('error', 'Gagal menyimpan: ' . $conn->error);
+    }
     $stmt->close();
     header('Location: index.php'); exit;
+}
+
+// Edit Mode logic
+$editData = null;
+if (isset($_GET['edit'])) {
+    $id_edit = (int)$_GET['edit'];
+    $editData = $conn->query("SELECT * FROM stock_opname WHERE id=$id_edit")->fetch_assoc();
+    if (!$editData) setFlash('error', 'Data tidak ditemukan.');
 }
 
 $filterBagian = ($role === 'superadmin') ? '' : "AND so.id_bagian=$id_bagian";
@@ -55,16 +71,22 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="card-header"><i class="bi bi-plus-lg me-2"></i>Form Stock Opname</div>
           <div class="card-body p-3">
             <form method="POST">
+              <input type="hidden" name="id_edit" value="<?= $editData['id'] ?? 0 ?>">
               <div class="mb-3">
                 <label class="form-label">Tanggal SO</label>
-                <input type="date" name="tanggal" class="form-control" value="<?=date('Y-m-d')?>" required>
+                <input type="date" name="tanggal" class="form-control" value="<?= $editData['tanggal'] ?? date('Y-m-d') ?>" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Barang</label>
                 <select name="id_barang" class="form-select" id="soBarang" required onchange="getStokSistem(this.value)">
                   <option value="">-- Pilih Barang --</option>
-                  <?php while($b=$barangList->fetch_assoc()): ?>
-                    <option value="<?=$b['id']?>">[<?=htmlspecialchars($b['kode_barang'])?>] <?=htmlspecialchars($b['nama_barang'])?></option>
+                  <?php 
+                  $barangList->data_seek(0);
+                  while($b=$barangList->fetch_assoc()): 
+                  ?>
+                    <option value="<?=$b['id']?>" <?= ($editData['id_barang']??0) == $b['id'] ? 'selected' : '' ?>>
+                        [<?=htmlspecialchars($b['kode_barang'])?>] <?=htmlspecialchars($b['nama_barang'])?>
+                    </option>
                   <?php endwhile; ?>
                 </select>
               </div>
@@ -73,25 +95,35 @@ include BASE_PATH . '/includes/sidebar.php';
                 <label class="form-label">Bagian</label>
                 <select name="id_bagian" class="form-select" required>
                   <option value="">-- Pilih Bagian --</option>
-                  <?php while($bg=$bagianList->fetch_assoc()): ?>
-                    <option value="<?=$bg['id']?>"><?=htmlspecialchars($bg['nama'])?></option>
+                  <?php 
+                  $bagianList->data_seek(0);
+                  while($bg=$bagianList->fetch_assoc()): 
+                  ?>
+                    <option value="<?=$bg['id']?>" <?= ($editData['id_bagian']??0) == $bg['id'] ? 'selected' : '' ?>><?=htmlspecialchars($bg['nama'])?></option>
                   <?php endwhile; ?>
                 </select>
               </div>
               <?php endif; ?>
               <div class="mb-3">
                 <label class="form-label">Stok Sistem <small class="text-muted">(otomatis)</small></label>
-                <input type="number" id="stokSistemDisplay" class="form-control" readonly value="0">
+                <input type="number" id="stokSistemDisplay" class="form-control" readonly value="<?= $editData['stok_sistem'] ?? 0 ?>">
               </div>
               <div class="mb-3">
                 <label class="form-label">Stok Fisik <span class="text-danger">*</span></label>
-                <input type="number" name="stok_fisik" class="form-control" min="0" required placeholder="0">
+                <input type="number" name="stok_fisik" class="form-control" min="0" required placeholder="0" value="<?= $editData['stok_fisik'] ?? '' ?>">
               </div>
               <div class="mb-3">
                 <label class="form-label">Keterangan</label>
-                <textarea name="keterangan" class="form-control" rows="2" placeholder="Alasan selisih (jika ada)"></textarea>
+                <textarea name="keterangan" class="form-control" rows="2" placeholder="Alasan selisih (jika ada)"><?= htmlspecialchars($editData['keterangan'] ?? '') ?></textarea>
               </div>
-              <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>Simpan Stock Opname</button>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-save me-1"></i><?= $editData ? 'Update Stock Opname' : 'Simpan Stock Opname' ?>
+                </button>
+                <?php if ($editData): ?>
+                    <a href="index.php" class="btn btn-outline-secondary btn-sm">Batal</a>
+                <?php endif; ?>
+              </div>
             </form>
           </div>
         </div>
@@ -101,7 +133,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="card-header"><i class="bi bi-list-ul me-2"></i>Riwayat Stock Opname (20 terbaru)</div>
           <div class="table-wrapper">
             <table class="table table-sm">
-              <thead><tr><th>Tanggal</th><th>Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Status</th></tr></thead>
+              <thead><tr><th>Tanggal</th><th>Barang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody>
                 <?php while($s=$list->fetch_assoc()): ?>
                 <tr>
@@ -112,9 +144,17 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center fw-bold <?=$s['selisih']>0?'text-success':($s['selisih']<0?'text-danger':'')?>">
                     <?=($s['selisih']>0?'+':'').number_format($s['selisih'])?>
                   </td>
+                  <td><small><?=htmlspecialchars($s['keterangan'])?></small></td>
                   <td>
                     <?php $sc=['pending'=>'badge-pending','disetujui'=>'badge-approved','ditolak'=>'badge-rejected']; ?>
                     <span class="badge-sipeba <?=$sc[$s['status']]??''?>"><?=ucfirst($s['status'])?></span>
+                  </td>
+                  <td>
+                    <a href="?edit=<?=$s['id']?>" class="text-primary me-2" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                    <form method="POST" action="delete.php" class="d-inline" onsubmit="return confirm('Hapus data ini?')">
+                      <input type="hidden" name="id" value="<?=$s['id']?>">
+                      <button type="submit" class="btn p-0 text-danger border-0 bg-transparent" title="Hapus"><i class="bi bi-trash"></i></button>
+                    </form>
                   </td>
                 </tr>
                 <?php endwhile; ?>
