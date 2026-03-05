@@ -67,6 +67,16 @@ include BASE_PATH . '/includes/sidebar.php';
               <label class="form-label">Tanggal Bukti Penerimaan</label>
               <input type="date" name="tanggal_bukti_penerimaan" class="form-control">
             </div>
+            <div class="col-md-6">
+              <label class="form-label">Sumber Penerimaan <span class="text-danger">*</span></label>
+              <select name="sumber" class="form-select" required>
+                <option value="">-- Pilih Sumber --</option>
+                <option value="belanja_modal">Belanja Modal</option>
+                <option value="belanja_barang_jasa">Belanja Barang/Jasa</option>
+                <option value="dropping">Dropping</option>
+                <option value="hibah">Hibah</option>
+              </select>
+            </div>
             <div class="col-12">
               <label class="form-label">DARI (Pemasok/Sumber)</label>
               <input type="text" name="dari" class="form-control" placeholder="Nama supplier/dinas">

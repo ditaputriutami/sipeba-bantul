@@ -23,6 +23,7 @@ $no_permintaan     = sanitize($_POST['no_permintaan'] ?? '');
 $tanggal           = $_POST['tanggal'] ?? date('Y-m-d');
 $id_barang         = (int)($_POST['id_barang'] ?? 0);
 $jumlah            = (int)($_POST['jumlah'] ?? 0);
+$jenis             = sanitize($_POST['jenis'] ?? 'penghapusan');
 $keterangan        = sanitize($_POST['keterangan'] ?? '');
 $penerima          = sanitize($_POST['penerima'] ?? '');
 $tgl_penyerahan    = $_POST['tanggal_penyerahan'] ?? null;
@@ -34,6 +35,9 @@ $errors = [];
 if (!$id_barang)     $errors[] = 'Barang wajib dipilih.';
 if ($jumlah < 1)     $errors[] = 'Jumlah minimal 1.';
 if (!$id_bagian)     $errors[] = 'Bagian wajib diisi.';
+if (!in_array($jenis, ['penghapusan','mutasi_keluar'])) {
+    $errors[] = 'Jenis pengurangan tidak valid.';
+}
 
 if (!empty($errors)) {
     setFlash('error', implode('<br>', $errors));
@@ -71,13 +75,13 @@ $conn->begin_transaction();
 try {
     // Insert header pengurangan (status pending)
     $stmt = $conn->prepare("
-        INSERT INTO pengurangan (no_permintaan, tanggal, id_barang, jumlah, keterangan, penerima, tanggal_penyerahan, id_bagian, id_user, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO pengurangan (no_permintaan, tanggal, id_barang, jumlah, keterangan, jenis, penerima, tanggal_penyerahan, id_bagian, id_user, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     ");
     $tglPenyerahan = !empty($tgl_penyerahan) ? $tgl_penyerahan : null;
-    $stmt->bind_param('ssiisssii',
+    $stmt->bind_param('ssiisssiii',
         $no_permintaan, $tanggal, $id_barang, $jumlah,
-        $keterangan, $penerima, $tglPenyerahan, $id_bagian, $id_user
+        $keterangan, $jenis, $penerima, $tglPenyerahan, $id_bagian, $id_user
     );
     $stmt->execute();
     $id_pengurangan = $conn->insert_id;

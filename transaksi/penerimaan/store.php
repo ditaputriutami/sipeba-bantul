@@ -14,6 +14,7 @@ $tanggal           = $_POST['tanggal'] ?? date('Y-m-d');
 $id_barang         = (int)($_POST['id_barang'] ?? 0);
 $jumlah            = (int)($_POST['jumlah'] ?? 0);
 $harga_satuan      = (float)($_POST['harga_satuan'] ?? 0);
+$sumber            = sanitize($_POST['sumber'] ?? 'belanja_modal');
 $no_bukti          = sanitize($_POST['no_bukti_penerimaan'] ?? '');
 $tanggal_bukti     = sanitize($_POST['tanggal_bukti_penerimaan'] ?? '');
 $keterangan        = sanitize($_POST['keterangan'] ?? '');
@@ -28,6 +29,9 @@ if (!$id_barang)  $errors[] = 'Barang wajib dipilih.';
 if ($jumlah < 1)  $errors[] = 'Jumlah minimal 1.';
 if ($harga_satuan <= 0) $errors[] = 'Harga satuan harus lebih dari 0.';
 if (!$id_bagian)  $errors[] = 'Bagian wajib diisi.';
+if (!in_array($sumber, ['belanja_modal','belanja_barang_jasa','dropping','hibah'])) {
+    $errors[] = 'Sumber penerimaan tidak valid.';
+}
 
 if (!empty($errors)) {
     setFlash('error', implode('<br>', $errors));
@@ -42,12 +46,12 @@ if (!DateTime::createFromFormat('Y-m-d', $tanggal)) {
 $tanggal_bukti_val = $tanggal_bukti ? $tanggal_bukti : null;
 
 $stmt = $conn->prepare("
-    INSERT INTO penerimaan (no_faktur, tanggal, id_barang, dari, jumlah, sisa_stok, harga_satuan, no_bukti_penerimaan, tanggal_bukti_penerimaan, keterangan, id_bagian, id_user, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    INSERT INTO penerimaan (no_faktur, tanggal, id_barang, dari, jumlah, sisa_stok, harga_satuan, no_bukti_penerimaan, tanggal_bukti_penerimaan, keterangan, sumber, id_bagian, id_user, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
 ");
-$stmt->bind_param('ssisiidsssii',
+$stmt->bind_param('ssisiidssssii',
     $no_faktur, $tanggal, $id_barang, $dari, $jumlah, /* sisa_stok = jumlah awal */ $jumlah, 
-    $harga_satuan, $no_bukti, $tanggal_bukti_val, $keterangan, $id_bagian, $id_user
+    $harga_satuan, $no_bukti, $tanggal_bukti_val, $keterangan, $sumber, $id_bagian, $id_user
 );
 
 if ($stmt->execute()) {

@@ -77,16 +77,17 @@ CREATE TABLE `jenis_barang` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `kode_jenis` VARCHAR(10) NOT NULL UNIQUE,
   `nama_jenis` VARCHAR(100) NOT NULL,
+  `kategori` ENUM('ASET TETAP','ASET LANCAR') NOT NULL DEFAULT 'ASET LANCAR',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-INSERT INTO `jenis_barang` (`kode_jenis`, `nama_jenis`) VALUES
-('ATK',   'Alat Tulis Kantor'),
-('BHP',   'Bahan Habis Pakai'),
-('KOMP',  'Komputer dan Elektronik'),
-('PRINT', 'Tinta dan Printer'),
-('KEBRS', 'Kebersihan dan Sanitasi'),
-('LAIN',  'Lain-lain');
+INSERT INTO `jenis_barang` (`kode_jenis`, `nama_jenis`, `kategori`) VALUES
+('ATK',   'Alat Tulis Kantor',       'ASET LANCAR'),
+('BHP',   'Bahan Habis Pakai',       'ASET LANCAR'),
+('KOMP',  'Komputer dan Elektronik', 'ASET TETAP'),
+('PRINT', 'Tinta dan Printer',       'ASET TETAP'),
+('KEBRS', 'Kebersihan dan Sanitasi', 'ASET LANCAR'),
+('LAIN',  'Lain-lain',               'ASET LANCAR');
 
 -- ============================================================
 -- Tabel: barang (Master Barang)
@@ -127,6 +128,7 @@ CREATE TABLE `penerimaan` (
   `jumlah_harga` DECIMAL(15,2) GENERATED ALWAYS AS (`jumlah` * `harga_satuan`) STORED,
   `no_bukti_penerimaan` VARCHAR(50) NULL,
   `keterangan` TEXT NULL,
+  `sumber` ENUM('belanja_modal','belanja_barang_jasa','dropping','hibah') DEFAULT 'belanja_modal',
   `id_bagian` INT UNSIGNED NOT NULL,
   `id_user` INT UNSIGNED NOT NULL,
   `status` ENUM('pending','disetujui','ditolak') DEFAULT 'pending',
@@ -150,6 +152,7 @@ CREATE TABLE `pengurangan` (
   `id_barang` INT UNSIGNED NOT NULL,
   `jumlah` INT UNSIGNED NOT NULL,
   `keterangan` TEXT NULL,
+  `jenis` ENUM('penghapusan','mutasi_keluar') DEFAULT 'penghapusan',
   `penerima` VARCHAR(100) NULL,
   `tanggal_penyerahan` DATE NULL,
   `id_bagian` INT UNSIGNED NOT NULL,

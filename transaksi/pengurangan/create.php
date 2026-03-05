@@ -58,6 +58,14 @@ include BASE_PATH . '/includes/sidebar.php';
                 <span class="input-group-text" id="satuanLabel">—</span>
               </div>
             </div>
+            <div class="col-md-6">
+              <label class="form-label">Jenis Pengurangan <span class="text-danger">*</span></label>
+              <select name="jenis" class="form-select" required>
+                <option value="">-- Pilih Jenis --</option>
+                <option value="penghapusan">Penghapusan</option>
+                <option value="mutasi_keluar">Mutasi Keluar</option>
+              </select>
+            </div>
             <?php if($role==='superadmin'): ?>
             <div class="col-md-6">
               <label class="form-label">Bagian <span class="text-danger">*</span></label>
