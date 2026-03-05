@@ -71,36 +71,61 @@ if (isset($_GET['export'])) {
   header('Content-Disposition: attachment; filename="' . $filename . '"');
   echo "\xEF\xBB\xBF";
 ?>
-  <table border="1">
+  <table border="1" style="border-collapse: collapse; table-layout: fixed; width: 2200px;">
+    <col width="40">
+    <col width="220">
+    <col width="24"><col width="24"><col width="24"><col width="24"><col width="24"><col width="24"><col width="24">
+    <col width="90">
+    <col width="80">
+    <col width="120">
+    <col width="160">
+    <col width="90">
+    <col width="80">
+    <col width="120">
+    <col width="160">
+    <col width="90">
+    <col width="160">
+    <col width="220">
     <thead>
-      <tr><th colspan="13" style="text-align:center; font-weight:bold;">DAFTAR HASIL PERHITUNGAN FISIK ATAS BARANG PERSEDIAAN/STOCK OPNAME</th></tr>
-      <tr><th colspan="13" style="text-align:center; font-weight:bold;">DI LINGKUNGAN PEMERINTAH KABUPATEN BANTUL</th></tr>
-      <tr><td colspan="13"></td></tr>
+      <tr><th colspan="20" style="text-align:center; font-weight:bold;">DAFTAR HASIL PERHITUNGAN FISIK ATAS BARANG PERSEDIAAN/STOCK OPNAME</th></tr>
+      <tr><th colspan="20" style="text-align:center; font-weight:bold;">DI LINGKUNGAN PEMERINTAH KABUPATEN BANTUL</th></tr>
+      <tr><td colspan="20"></td></tr>
       <tr>
-        <td colspan="2">OPD</td><td>: <?= $bagian ? htmlspecialchars($bagian['nama']) : 'Semua Bagian' ?></td>
-        <td colspan="10"></td>
+        <th colspan="20" style="text-align:left; font-weight:bold;">OPD : <?= $bagian ? strtoupper(htmlspecialchars($bagian['nama'])) : 'SEMUA BAGIAN' ?></th>
       </tr>
       <tr>
-        <td colspan="2">PER TANGGAL</td><td>: 31 Desember <?= $f_tahun ?></td>
-        <td colspan="10"></td>
+        <th colspan="20" style="text-align:left; font-weight:bold;">PER TANGGAL : 31 DESEMBER <?= $f_tahun ?></th>
       </tr>
-      <tr><td colspan="13"></td></tr>
-      <tr>
-        <th rowspan="3">NO</th>
-        <th rowspan="3">NAMA BARANG</th>
-        <th rowspan="3">KODE BARANG</th>
-        <th colspan="10" style="text-align:center;">JUMLAH PERSEDIAAN PER TANGGAL PERHITUNGAN</th>
-        <th rowspan="3">KETERANGAN</th>
+      <tr><td colspan="20"></td></tr>
+      <tr style="background-color:#eee; font-weight:bold;">
+        <th rowspan="4" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">NO</th>
+        <th rowspan="4" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">NAMA BARANG</th>
+        <th colspan="7" rowspan="4" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">KODE BARANG</th>
+        <th colspan="10" style="text-align:center; border:1px solid #000; white-space:nowrap; vertical-align:middle;">JUMLAH PERSEDIAAN PER TANGGAL PERHITUNGAN</th>
+        <th rowspan="4" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">KETERANGAN</th>
       </tr>
-      <tr>
-        <th colspan="4" style="text-align:center;">MENURUT ADMINISTRASI</th>
-        <th colspan="4" style="text-align:center;">MENURUT OPNAME</th>
-        <th colspan="2" style="text-align:center;">SELISIH</th>
+      <tr style="background-color:#eee; font-weight:bold;">
+        <th colspan="4" style="text-align:center; border:1px solid #000">MENURUT ADMINISTRASI</th>
+        <th colspan="4" style="text-align:center; border:1px solid #000">MENURUT OPNAME</th>
+        <th colspan="2" style="text-align:center; border:1px solid #000">SELISIH</th>
       </tr>
-      <tr>
-        <th>JUMLAH</th><th>SATUAN</th><th>HARGA (Rp)</th><th>JUMLAH (Rp)</th>
-        <th>JUMLAH</th><th>SATUAN</th><th>HARGA (Rp)</th><th>JUMLAH (Rp)</th>
-        <th>JUMLAH</th><th>JUMLAH (Rp)</th>
+      <tr style="background-color:#eee; font-weight:bold;">
+        <th colspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">BARANG</th><th colspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">HARGA</th>
+        <th colspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">BARANG</th><th colspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">HARGA</th>
+        <th rowspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">JUMLAH</th><th rowspan="2" style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">TOTAL (Rp)</th>
+      </tr>
+      <tr style="font-size:.75rem; background-color:#eee; font-weight:bold;">
+        <th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">JUMLAH</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">SATUAN</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">SATUAN (Rp)</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">TOTAL (Rp)</th>
+        <th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">JUMLAH</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">SATUAN</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">SATUAN (Rp)</th><th style="border:1px solid #000; white-space:nowrap; vertical-align:middle;">TOTAL (Rp)</th>
+      </tr>
+      <tr style="font-size:.7rem; background-color:#f5f5f5; font-weight:bold; text-align:center;">
+        <th style="border:1px solid #000;">1</th>
+        <th style="border:1px solid #000;">2</th>
+        <th colspan="7" style="border:1px solid #000;">3</th>
+        <th style="border:1px solid #000;">4</th><th style="border:1px solid #000;">5</th><th style="border:1px solid #000;">6</th><th style="border:1px solid #000;">7 (4 x 6)</th>
+        <th style="border:1px solid #000;">8</th><th style="border:1px solid #000;">9</th><th style="border:1px solid #000;">10</th><th style="border:1px solid #000;">11 (8 x 10)</th>
+        <th style="border:1px solid #000;">12</th><th style="border:1px solid #000;">13</th>
+        <th style="border:1px solid #000;">14</th>
       </tr>
     </thead>
     <tbody>
@@ -108,45 +133,93 @@ if (isset($_GET['export'])) {
       $no = 1;
       $t_admin_rp = 0; $t_opname_rp = 0; $t_selisih_rp = 0;
       foreach ($items as $nama_jenis => $rows):
+        $kj_raw = $rows[0]['kode_jenis'];
+        if (strpos($kj_raw, '.') !== false) {
+            $kj_parts = explode('.', $kj_raw);
+        } elseif (strlen($kj_raw) == 9) {
+            $kj_parts = [substr($kj_raw,0,1), substr($kj_raw,1,1), substr($kj_raw,2,1), substr($kj_raw,3,2), substr($kj_raw,5,2), substr($kj_raw,7,2)];
+        } else {
+            $kj_parts = [$kj_raw];
+        }
+        // Cap at 7 segments
+        if (count($kj_parts) > 7) {
+            $rem = array_slice($kj_parts, 6);
+            $kj_parts = array_slice($kj_parts, 0, 6);
+            $kj_parts[] = implode('.', $rem);
+        } else {
+            $kj_parts = array_pad($kj_parts, 7, '');
+        }
       ?>
         <tr style="font-weight:bold; background-color:#f5f5f5;">
-            <td></td>
-            <td colspan="13"><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
+            <td style="border:1px solid #000"></td>
+            <td style="border:1px solid #000"><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
+            <?php foreach ($kj_parts as $kp): ?>
+              <td align="center" style="border:1px solid #000; mso-number-format:'\@'; white-space:nowrap; vertical-align:middle;"><?= $kp ?></td>
+            <?php endforeach; ?>
+            <td style="border:1px solid #000"></td>
+            <td colspan="11" style="border:1px solid #000"></td>
         </tr>
         <?php foreach ($rows as $r): 
             $admin_rp = $r['admin_qty'] * $r['harga_satuan'];
             $opname_rp = $r['opname_qty'] * $r['harga_satuan'];
             $selisih_rp = $opname_rp - $admin_rp;
             $t_admin_rp += $admin_rp; $t_opname_rp += $opname_rp; $t_selisih_rp += $selisih_rp;
+
+            $kode_raw = $r['kode_barang'];
+            if (strpos($kode_raw, '.') !== false) {
+                $kode_parts = explode('.', $kode_raw);
+            } elseif (strlen($kode_raw) >= 11) {
+                $kode_parts = [
+                    substr($kode_raw, 0, 1),
+                    substr($kode_raw, 1, 1),
+                    substr($kode_raw, 2, 1),
+                    substr($kode_raw, 3, 2),
+                    substr($kode_raw, 5, 2),
+                    substr($kode_raw, 7, 2),
+                    substr($kode_raw, 9)
+                ];
+            } else {
+                $kode_parts = [$kode_raw];
+            }
+            // Cap at 7 segments
+            if (count($kode_parts) > 7) {
+                $rem = array_slice($kode_parts, 6);
+                $kode_parts = array_slice($kode_parts, 0, 6);
+                $kode_parts[] = implode('.', $rem);
+            } else {
+                $kode_parts = array_pad($kode_parts, 7, '');
+            }
         ?>
             <tr>
-              <td align="center"><?= $no++ ?></td>
-              <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-              <td align="center" style="mso-number-format:'\@';"><?= htmlspecialchars($r['kode_barang']) ?></td>
-              <td align="center"><?= $r['admin_qty'] ?></td>
-              <td align="center"><?= htmlspecialchars($r['satuan']) ?></td>
-              <td align="right"><?= number_format($r['harga_satuan'], 2, ',', '.') ?></td>
-              <td align="right"><?= number_format($admin_rp, 2, ',', '.') ?></td>
-              <td align="center"><?= $r['opname_qty'] ?></td>
-              <td align="center"><?= htmlspecialchars($r['satuan']) ?></td>
-              <td align="right"><?= number_format($r['harga_satuan'], 2, ',', '.') ?></td>
-              <td align="right"><?= number_format($opname_rp, 2, ',', '.') ?></td>
-              <td align="center"><?= $r['opname_qty'] - $r['admin_qty'] ?></td>
-              <td align="right"><?= number_format($selisih_rp, 2, ',', '.') ?></td>
-              <td><?= htmlspecialchars($r['keterangan']) ?></td>
+              <td align="center" style="border:1px solid #000"><?= $no++ ?></td>
+              <td style="border:1px solid #000"><?= htmlspecialchars($r['nama_barang']) ?></td>
+              <?php foreach ($kode_parts as $kp): ?>
+                <td align="center" style="border:1px solid #000; mso-number-format:'\@'; white-space:nowrap; vertical-align:middle;"><?= $kp ?></td>
+              <?php endforeach; ?>
+              <td align="center" style="border:1px solid #000"><?= $r['admin_qty'] ?></td>
+              <td align="center" style="border:1px solid #000"><?= htmlspecialchars($r['satuan']) ?></td>
+              <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00';"><?= $r['harga_satuan'] ?></td>
+              <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00'; font-weight:bold;"><?= $admin_rp ?></td>
+              <td align="center" style="border:1px solid #000"><?= $r['opname_qty'] ?></td>
+              <td align="center" style="border:1px solid #000"><?= htmlspecialchars($r['satuan']) ?></td>
+              <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00';"><?= $r['harga_satuan'] ?></td>
+              <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00'; font-weight:bold;"><?= $opname_rp ?></td>
+              <td align="center" style="border:1px solid #000"><?= $r['opname_qty'] - $r['admin_qty'] ?></td>
+              <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00'; font-weight:bold;"><?= $selisih_rp ?></td>
+              <td style="border:1px solid #000"><?= htmlspecialchars($r['keterangan']) ?></td>
             </tr>
         <?php endforeach; ?>
       <?php endforeach; ?>
     </tbody>
     <tfoot>
       <tr style="font-weight:bold; background-color:#eee;">
-        <td colspan="6" align="center">JUMLAH</td>
-        <td align="right"><?= number_format($t_admin_rp, 2, ',', '.') ?></td>
-        <td colspan="3"></td>
-        <td align="right"><?= number_format($t_opname_rp, 2, ',', '.') ?></td>
-        <td></td>
-        <td align="right"><?= number_format($t_selisih_rp, 2, ',', '.') ?></td>
-        <td></td>
+        <td colspan="12" align="center" style="border:1px solid #000">JUMLAH</td>
+        <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00';"><?= $t_admin_rp ?></td>
+        <td colspan="3" style="border:1px solid #000"></td>
+        <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00';"><?= $t_opname_rp ?></td>
+        <td style="border:1px solid #000"></td>
+        <td align="right" style="border:1px solid #000; mso-number-format:'\#\,\#\#0\.00';"><?= $t_selisih_rp ?></td>
+        <td style="border:1px solid #000"></td>
       </tr>
     </tfoot>
   </table>
@@ -190,24 +263,46 @@ include BASE_PATH . '/includes/sidebar.php';
         <div class="text-muted mt-1" style="font-size:.85rem">PER TANGGAL 31 DESEMBER <?= $f_tahun ?></div>
       </div>
       <div class="table-responsive p-3">
-        <table class="table table-bordered table-sm align-middle" style="font-size:.75rem">
-          <thead class="table-primary text-center align-middle">
-            <tr>
-              <th rowspan="3">NO</th>
-              <th rowspan="3">NAMA BARANG</th>
-              <th rowspan="3">KODE BARANG</th>
+        <table class="table table-bordered table-sm align-middle mb-0" style="font-size:.75rem;">
+          <thead class="bg-light text-center align-middle">
+            <tr class="text-dark">
+              <th rowspan="4" style="min-width:40px">NO</th>
+              <th rowspan="4" style="min-width:200px">NAMA BARANG</th>
+              <th colspan="7" rowspan="4" class="align-middle">KODE BARANG</th>
               <th colspan="10">JUMLAH PERSEDIAAN PER TANGGAL PERHITUNGAN</th>
-              <th rowspan="3">KETERANGAN</th>
+              <th rowspan="4" style="min-width:120px">KETERANGAN</th>
             </tr>
-            <tr>
-              <th colspan="4" class="bg-info bg-opacity-10">MENURUT ADMINISTRASI</th>
-              <th colspan="4" class="bg-success bg-opacity-10">MENURUT OPNAME</th>
-              <th colspan="2" class="bg-warning bg-opacity-10">SELISIH</th>
+            <tr class="text-dark">
+              <th colspan="4">MENURUT ADMINISTRASI</th>
+              <th colspan="4">MENURUT OPNAME</th>
+              <th colspan="2">SELISIH</th>
             </tr>
-            <tr style="font-size:.7rem">
-              <th>JUMLAH</th><th>SATUAN</th><th>HARGA</th><th>TOTAL</th>
-              <th>JUMLAH</th><th>SATUAN</th><th>HARGA</th><th>TOTAL</th>
-              <th>QTY</th><th>TOTAL</th>
+            <tr style="font-size:.7rem" class="fw-bold text-dark">
+              <th colspan="2" class="bg-secondary bg-opacity-10">BARANG</th>
+              <th colspan="2" class="bg-secondary bg-opacity-10">HARGA</th>
+              <th colspan="2" class="bg-secondary bg-opacity-10">BARANG</th>
+              <th colspan="2" class="bg-secondary bg-opacity-10">HARGA</th>
+              <th rowspan="2" class="bg-secondary bg-opacity-10">QTY</th>
+              <th rowspan="2" class="bg-secondary bg-opacity-10">TOTAL</th>
+            </tr>
+            <tr style="font-size:.7rem; background-color:#f8f9fa;" class="text-center fw-bold">
+              <td class="px-1 text-nowrap">JUMLAH</td>
+              <td class="px-1 text-nowrap">SATUAN</td>
+              <td class="px-1 text-nowrap">SATUAN (Rp)</td>
+              <td class="px-1 text-nowrap">TOTAL (Rp)</td>
+              <td class="px-1 text-nowrap">JUMLAH</td>
+              <td class="px-1 text-nowrap">SATUAN</td>
+              <td class="px-1 text-nowrap">SATUAN (Rp)</td>
+              <td class="px-1 text-nowrap">TOTAL (Rp)</td>
+            </tr>
+            <tr style="font-size:.65rem; background-color:#e9ecef;" class="text-center fw-bold text-muted">
+              <td>1</td>
+              <td>2</td>
+              <td colspan="7">3</td>
+              <td>4</td><td>5</td><td>6</td><td>7</td>
+              <td>8</td><td>9</td><td>10</td><td>11</td>
+              <td>12</td><td>13</td>
+              <td>14</td>
             </tr>
           </thead>
           <tbody>
@@ -216,20 +311,70 @@ include BASE_PATH . '/includes/sidebar.php';
             $t_admin_rp = 0; $t_opname_rp = 0; $t_selisih_rp = 0;
             foreach ($items as $nama_jenis => $rows):
             ?>
-              <tr class="table-secondary fw-bold">
+              <?php 
+              $kj_raw = $rows[0]['kode_jenis'];
+              if (strpos($kj_raw, '.') !== false) {
+                  $kj_parts = explode('.', $kj_raw);
+              } elseif (strlen($kj_raw) == 9) {
+                  $kj_parts = [substr($kj_raw,0,1), substr($kj_raw,1,1), substr($kj_raw,2,1), substr($kj_raw,3,2), substr($kj_raw,5,2), substr($kj_raw,7,2)];
+              } else {
+                  $kj_parts = [$kj_raw];
+              }
+              // Cap at 7 segments
+              if (count($kj_parts) > 7) {
+                  $rem = array_slice($kj_parts, 6);
+                  $kj_parts = array_slice($kj_parts, 0, 6);
+                  $kj_parts[] = implode('.', $rem);
+              } else {
+                  $kj_parts = array_pad($kj_parts, 7, '');
+              }
+              ?>
+              <tr class="table-secondary fw-bold text-dark">
                   <td></td>
-                  <td colspan="13"><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
+                  <td><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
+                  <?php foreach ($kj_parts as $kp): ?>
+                    <td class="text-center text-nowrap" style="min-width:30px; padding: 0 0.1rem;"><?= $kp ?></td>
+                  <?php endforeach; ?>
+                  <td></td>
+                  <td colspan="11"></td>
               </tr>
               <?php foreach ($rows as $r): 
                   $admin_rp = $r['admin_qty'] * $r['harga_satuan'];
                   $opname_rp = $r['opname_qty'] * $r['harga_satuan'];
                   $selisih_rp = $opname_rp - $admin_rp;
                   $t_admin_rp += $admin_rp; $t_opname_rp += $opname_rp; $t_selisih_rp += $selisih_rp;
+                  
+                  $kode_raw = $r['kode_barang'];
+                  if (strpos($kode_raw, '.') !== false) {
+                      $kode_parts = explode('.', $kode_raw);
+                  } elseif (strlen($kode_raw) >= 11) {
+                      $kode_parts = [
+                          substr($kode_raw, 0, 1),
+                          substr($kode_raw, 1, 1),
+                          substr($kode_raw, 2, 1),
+                          substr($kode_raw, 3, 2),
+                          substr($kode_raw, 5, 2),
+                          substr($kode_raw, 7, 2),
+                          substr($kode_raw, 9)
+                      ];
+                  } else {
+                      $kode_parts = [$kode_raw];
+                  }
+                  // Cap at 7 segments
+                  if (count($kode_parts) > 7) {
+                      $rem = array_slice($kode_parts, 6);
+                      $kode_parts = array_slice($kode_parts, 0, 6);
+                      $kode_parts[] = implode('.', $rem);
+                  } else {
+                      $kode_parts = array_pad($kode_parts, 7, '');
+                  }
               ?>
-                <tr>
+                <tr class="text-dark">
                   <td class="text-center"><?= $no++ ?></td>
                   <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-                  <td class="text-center"><code><?= htmlspecialchars($r['kode_barang']) ?></code></td>
+                  <?php foreach ($kode_parts as $kp): ?>
+                    <td class="text-center text-nowrap" style="min-width:30px; padding: 0 0.1rem;"><?= $kp ?></td>
+                  <?php endforeach; ?>
                   <?php /* Administrasi */ ?>
                   <td class="text-center"><?= number_format($r['admin_qty'], 0, ',', '.') ?></td>
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
@@ -252,9 +397,9 @@ include BASE_PATH . '/includes/sidebar.php';
               <?php endforeach; ?>
             <?php endforeach; ?>
           </tbody>
-          <tfoot class="table-secondary fw-bold">
+          <tfoot class="table-secondary fw-bold text-dark">
             <tr>
-              <td colspan="6" class="text-end">JUMLAH</td>
+              <td colspan="12" class="text-end">JUMLAH</td>
               <td class="text-end"><?= number_format($t_admin_rp, 0, ',', '.') ?></td>
               <td colspan="3"></td>
               <td class="text-end"><?= number_format($t_opname_rp, 0, ',', '.') ?></td>
