@@ -7,7 +7,7 @@ $id_bagian = getUserBagian();
 
 if ($id) {
     $tx = $conn->query("SELECT id, id_bagian, status FROM pengurangan WHERE id=$id")->fetch_assoc();
-    if ($tx && $tx['status'] === 'pending') {
+    if ($tx) {
         if ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
             // Hapus detail FIFO terlebih dahulu (FK constraint)
             $conn->query("DELETE FROM pengurangan_detail WHERE id_pengurangan=$id");
@@ -17,7 +17,7 @@ if ($id) {
             setFlash('error','Akses ditolak.');
         }
     } else {
-        setFlash('error','Hanya transaksi pending yang bisa dihapus.');
+        setFlash('error','Pengurangan tidak ditemukan.');
     }
 }
 header('Location: index.php'); exit;

@@ -14,9 +14,7 @@ $tanggal           = $_POST['tanggal'] ?? date('Y-m-d');
 $id_barang         = (int)($_POST['id_barang'] ?? 0);
 $jumlah            = (int)($_POST['jumlah'] ?? 0);
 $harga_satuan      = (float)($_POST['harga_satuan'] ?? 0);
-
 $keterangan        = sanitize($_POST['keterangan'] ?? '');
-$dari              = sanitize($_POST['dari'] ?? '');
 $id_bagian         = ($role === 'superadmin') ? (int)$_POST['id_bagian'] : (int)getUserBagian();
 $id_user           = getUserId();
 
@@ -40,12 +38,11 @@ if (!DateTime::createFromFormat('Y-m-d', $tanggal)) {
 }
 
 $stmt = $conn->prepare("
-    INSERT INTO penerimaan (no_faktur, tanggal, id_barang, dari, jumlah, sisa_stok, harga_satuan, keterangan, sumber, id_bagian, id_user, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'belanja_modal', ?, ?, 'pending')
+    INSERT INTO penerimaan (no_faktur, tanggal, id_barang, jumlah, sisa_stok, harga_satuan, keterangan, sumber, id_bagian, id_user, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'belanja_modal', ?, ?, 'pending')
 ");
-$stmt->bind_param('ssisiidsii',
-    $no_faktur, $tanggal, $id_barang, $dari, $jumlah, /* sisa_stok = jumlah awal */ $jumlah, 
-    $harga_satuan, $keterangan, $id_bagian, $id_user
+$stmt->bind_param('ssiiidsii',
+    $no_faktur, $tanggal, $id_barang, $jumlah, $jumlah, $harga_satuan, $keterangan, $id_bagian, $id_user
 );
 
 if ($stmt->execute()) {

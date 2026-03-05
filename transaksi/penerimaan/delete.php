@@ -7,7 +7,7 @@ $id_bagian = getUserBagian();
 
 if ($id) {
     $tx = $conn->query("SELECT id, id_bagian, status FROM penerimaan WHERE id=$id")->fetch_assoc();
-    if ($tx && $tx['status'] === 'pending') {
+    if ($tx) {
         // Cek bagian access
         if ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
             $conn->query("DELETE FROM penerimaan WHERE id=$id");
@@ -16,7 +16,7 @@ if ($id) {
             setFlash('error','Akses ditolak.');
         }
     } else {
-        setFlash('error','Hanya transaksi pending yang bisa dihapus.');
+        setFlash('error','Penerimaan tidak ditemukan.');
     }
 }
 header('Location: index.php'); exit;

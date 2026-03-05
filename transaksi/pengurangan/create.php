@@ -6,7 +6,8 @@ $user = getCurrentUser();
 $role = getUserRole();
 $id_bagian = getUserBagian();
 
-$barangList = $conn->query("SELECT id, kode_barang, nama_barang, satuan FROM barang ORDER BY nama_barang");
+$jenisList = $conn->query("SELECT id, nama_jenis FROM jenis_barang ORDER BY nama_jenis");
+$barangList = $conn->query("SELECT id, kode_barang, nama_barang, satuan, id_jenis_barang FROM barang ORDER BY nama_barang");
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
 include BASE_PATH . '/includes/header.php';
@@ -34,18 +35,27 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">No. Permintaan / Nomor</label>
-              <input type="text" name="no_permintaan" class="form-control" placeholder="Contoh: PERM/2024/001">
+              <input type="text" name="no_permintaan" class="form-control" placeholder="">
             </div>
             <div class="col-md-6">
               <label class="form-label">Tanggal <span class="text-danger">*</span></label>
               <input type="date" name="tanggal" class="form-control" value="<?=date('Y-m-d')?>" required>
             </div>
             <div class="col-12">
+              <label class="form-label">Jenis Barang <span class="text-danger">*</span></label>
+              <select name="id_jenis_barang" class="form-select" id="jenisSelect" required onchange="filterBarang(this)">
+                <option value="">-- Pilih Jenis Barang --</option>
+                <?php while($jenis=$jenisList->fetch_assoc()): ?>
+                  <option value="<?=$jenis['id']?>"><?=htmlspecialchars($jenis['nama_jenis'])?></option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+            <div class="col-12">
               <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
               <select name="id_barang" class="form-select" id="barangSelect" required onchange="checkStok(this)">
                 <option value="">-- Pilih Barang --</option>
-                <?php while($b=$barangList->fetch_assoc()): ?>
-                  <option value="<?=$b['id']?>" data-satuan="<?=htmlspecialchars($b['satuan'])?>">
+                <?php $barangList->data_seek(0); while($b=$barangList->fetch_assoc()): ?>
+                  <option value="<?=$b['id']?>" data-satuan="<?=htmlspecialchars($b['satuan'])?>" data-jenis="<?=$b['id_jenis_barang']?>" style="display:none;">
                     [<?=htmlspecialchars($b['kode_barang'])?>] <?=htmlspecialchars($b['nama_barang'])?>
                   </option>
                 <?php endwhile; ?>
@@ -58,20 +68,12 @@ include BASE_PATH . '/includes/sidebar.php';
                 <span class="input-group-text" id="satuanLabel">—</span>
               </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Jenis Pengurangan <span class="text-danger">*</span></label>
-              <select name="jenis" class="form-select" required>
-                <option value="">-- Pilih Jenis --</option>
-                <option value="penghapusan">Penghapusan</option>
-                <option value="mutasi_keluar">Mutasi Keluar</option>
-              </select>
-            </div>
             <?php if($role==='superadmin'): ?>
             <div class="col-md-6">
               <label class="form-label">Bagian <span class="text-danger">*</span></label>
               <select name="id_bagian" class="form-select" required>
                 <option value="">-- Pilih Bagian --</option>
-                <?php while($bg=$bagianList->fetch_assoc()): ?>
+                <?php $bagianList->data_seek(0); while($bg=$bagianList->fetch_assoc()): ?>
                   <option value="<?=$bg['id']?>"><?=htmlspecialchars($bg['nama'])?></option>
                 <?php endwhile; ?>
               </select>
@@ -108,6 +110,29 @@ include BASE_PATH . '/includes/sidebar.php';
 <script>
 let stokTersedia = 0;
 const bagianId = <?=$id_bagian ?? 'null'?>;
+
+function filterBarang(sel) {
+  const idJenis = sel.value;
+  const barangSelect = document.getElementById('barangSelect');
+  const options = barangSelect.querySelectorAll('option');
+  
+  // Reset barang select
+  barangSelect.value = '';
+  document.getElementById('stokInfo').style.display = 'none';
+  document.getElementById('stokWarning').style.display = 'none';
+  document.getElementById('satuanLabel').textContent = '—';
+  document.getElementById('jumlahInput').value = '';
+  stokTersedia = 0;
+  
+  // Show/hide barang options based on jenis selection
+  options.forEach(opt => {
+    if (opt.value === '') {
+      opt.style.display = 'block'; // Always show the placeholder
+    } else {
+      opt.style.display = opt.dataset.jenis === idJenis ? 'block' : 'none';
+    }
+  });
+}
 
 async function checkStok(sel) {
   const idBarang = sel.value;
