@@ -99,9 +99,9 @@ include BASE_PATH . '/includes/sidebar.php';
                 <?php $no=1; while($j=$list->fetch_assoc()): ?>
                 <tr>
                   <td><?=$no++?></td>
-                  <td><code><?=htmlspecialchars($j['kode_jenis'])?></code></td>
+                  <td><span><?=htmlspecialchars($j['kode_jenis'])?></span></td>
                   <td><?=htmlspecialchars($j['nama_jenis'])?></td>
-                  <td><span class="badge bg-primary"><?=$j['jml_barang']?></span></td>
+                  <td><span><?=$j['jml_barang']?></span></td>
                   <td>
                     <a href="?action=edit&id=<?=$j['id']?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
                     <form method="POST" class="d-inline">

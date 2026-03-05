@@ -78,17 +78,14 @@ if (isset($_GET['export'])) {
         <th rowspan="2">SATUAN</th>
         <th rowspan="2">HARGA SATUAN (Rp)</th>
         <th rowspan="2">JUMLAH HARGA (Rp)</th>
-        <th colspan="2">BUKTI PENERIMAAN</th>
         <th rowspan="2">KETERANGAN</th>
       </tr>
       <tr>
         <th>NOMOR</th>
         <th>TANGGAL</th>
-        <th>NOMOR</th>
-        <th>TANGGAL</th>
       </tr>
       <tr>
-        <?php for ($i = 1; $i <= 20; $i++) echo "<th style='text-align:center;'>$i</th>"; ?>
+        <?php for ($i = 1; $i <= 18; $i++) echo "<th style='text-align:center;'>$i</th>"; ?>
       </tr>
     </thead>
     <tbody>
@@ -139,8 +136,6 @@ if (isset($_GET['export'])) {
           <td style="text-align:center;"><?= htmlspecialchars($r['satuan']) ?></td>
           <td style="text-align:right;"><?= number_format($r['harga_satuan'], 0, '', '') ?></td>
           <td style="text-align:right;"><?= number_format($r['jumlah_harga'], 0, '', '') ?></td>
-          <td><?= htmlspecialchars($r['no_bukti_penerimaan'] ?? '') ?></td>
-          <td style="mso-number-format:'yyyy\-mm\-dd';"><?= htmlspecialchars($r['tanggal_bukti_penerimaan'] ?? '') ?></td>
           <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
         </tr>
       <?php
@@ -221,12 +216,9 @@ include BASE_PATH . '/includes/sidebar.php';
               <th rowspan="2">SATUAN</th>
               <th rowspan="2">HARGA SATUAN (Rp)</th>
               <th rowspan="2">JUMLAH HARGA (Rp)</th>
-              <th colspan="2">BUKTI PENERIMAAN</th>
               <th rowspan="2">KETERANGAN</th>
             </tr>
             <tr>
-              <th>NOMOR</th>
-              <th>TANGGAL</th>
               <th>NOMOR</th>
               <th>TANGGAL</th>
             </tr>
@@ -268,7 +260,7 @@ include BASE_PATH . '/includes/sidebar.php';
                     <td class="text-end"></td>
                     <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
                     <td class="text-center"><?= htmlspecialchars($r['kode_jenis']) ?></td>
-                    <td colspan="10"></td>
+                    <td colspan="8"></td>
                   </tr>
                 <?php endif; ?>
                 <tr>
@@ -283,8 +275,6 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                   <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
                   <td class="text-end fw-semibold"><?= number_format($r['jumlah_harga'], 0, ',', '.') ?></td>
-                  <td><?= htmlspecialchars($r['no_bukti_penerimaan'] ?? '') ?></td>
-                  <td><?= !empty($r['tanggal_bukti_penerimaan']) ? formatTanggal($r['tanggal_bukti_penerimaan']) : '' ?></td>
                   <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
                 </tr>
             <?php endforeach;
@@ -298,7 +288,7 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td></td>
                 <td></td>
                 <td class="text-end text-success"><?= number_format($totalJumlah, 0, ',', '.') ?></td>
-                <td colspan="3"></td>
+                <td colspan="1"></td>
               </tr>
             </tfoot>
           <?php endif; ?>

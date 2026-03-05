@@ -141,7 +141,7 @@ include BASE_PATH . '/includes/sidebar.php';
         </a>
       </div>
       <div class="col-auto">
-        <a href="<?=BASE_URL?>/laporan/buku_penerimaan.php" class="btn btn-outline-primary">
+        <a href="<?=BASE_URL?>/laporan/stock_opname_detail.php" class="btn btn-outline-primary">
           <i class="bi bi-file-earmark-text me-1"></i>Lihat Laporan
         </a>
       </div>

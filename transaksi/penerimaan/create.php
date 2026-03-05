@@ -6,7 +6,8 @@ $user = getCurrentUser();
 $role = getUserRole();
 $id_bagian = getUserBagian();
 
-$barangList = $conn->query("SELECT id, kode_barang, nama_barang, satuan FROM barang ORDER BY nama_barang");
+$jenisList = $conn->query("SELECT id, kode_jenis, nama_jenis FROM jenis_barang ORDER BY nama_jenis");
+$barangList = $conn->query("SELECT id, kode_barang, nama_barang, satuan, id_jenis_barang FROM barang ORDER BY nama_barang");
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
 include BASE_PATH . '/includes/header.php';
@@ -35,11 +36,20 @@ include BASE_PATH . '/includes/sidebar.php';
               <input type="date" name="tanggal" class="form-control" value="<?=date('Y-m-d')?>" required>
             </div>
             <div class="col-12">
+              <label class="form-label">Jenis Barang <span class="text-danger">*</span></label>
+              <select class="form-select" id="jenisFilter" onchange="filterBarang(this.value)">
+                <option value="">-- Semua Jenis --</option>
+                <?php while($j=$jenisList->fetch_assoc()): ?>
+                  <option value="<?=$j['id']?>">[<?=htmlspecialchars($j['kode_jenis'])?>] <?=htmlspecialchars($j['nama_jenis'])?></option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+            <div class="col-12">
               <label class="form-label">Nama Barang <span class="text-danger">*</span></label>
               <select name="id_barang" class="form-select" id="barangSelect" required onchange="setSatuan(this)">
-                <option value="">-- Pilih Barang --</option>
+                <option value="" data-jenis="">-- Pilih Barang --</option>
                 <?php while($b=$barangList->fetch_assoc()): ?>
-                  <option value="<?=$b['id']?>" data-satuan="<?=htmlspecialchars($b['satuan'])?>">
+                  <option value="<?=$b['id']?>" data-satuan="<?=htmlspecialchars($b['satuan'])?>" data-jenis="<?=$b['id_jenis_barang']?>">
                     [<?=htmlspecialchars($b['kode_barang'])?>] <?=htmlspecialchars($b['nama_barang'])?>
                   </option>
                 <?php endwhile; ?>
@@ -59,24 +69,8 @@ include BASE_PATH . '/includes/sidebar.php';
                 <input type="number" name="harga_satuan" class="form-control" min="0" step="1" required placeholder="0">
               </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">No. Bukti Penerimaan</label>
-              <input type="text" name="no_bukti_penerimaan" class="form-control" placeholder="Contoh: BP/2024/001">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Tanggal Bukti Penerimaan</label>
-              <input type="date" name="tanggal_bukti_penerimaan" class="form-control">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Sumber Penerimaan <span class="text-danger">*</span></label>
-              <select name="sumber" class="form-select" required>
-                <option value="">-- Pilih Sumber --</option>
-                <option value="belanja_modal">Belanja Modal</option>
-                <option value="belanja_barang_jasa">Belanja Barang/Jasa</option>
-                <option value="dropping">Dropping</option>
-                <option value="hibah">Hibah</option>
-              </select>
-            </div>
+
+
             <div class="col-12">
               <label class="form-label">DARI (Pemasok/Sumber)</label>
               <input type="text" name="dari" class="form-control" placeholder="Nama supplier/dinas">
@@ -117,6 +111,25 @@ include BASE_PATH . '/includes/sidebar.php';
 function setSatuan(sel) {
   const opt = sel.options[sel.selectedIndex];
   document.getElementById('satuanLabel').textContent = opt.dataset.satuan || '—';
+}
+
+function filterBarang(jenisId) {
+  const select = document.getElementById('barangSelect');
+  const options = select.options;
+  
+  select.value = "";
+  document.getElementById('satuanLabel').textContent = '—';
+
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i];
+    if (opt.value === "") continue;
+    
+    if (jenisId === "" || opt.dataset.jenis === jenisId) {
+      opt.style.display = "";
+    } else {
+      opt.style.display = "none";
+    }
+  }
 }
 </script>
 <?php include BASE_PATH . '/includes/footer.php'; ?>

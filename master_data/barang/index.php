@@ -69,6 +69,17 @@ include BASE_PATH . '/includes/sidebar.php';
               <input type="hidden" name="action" value="<?=$editItem?'edit':'create'?>">
               <?php if($editItem): ?><input type="hidden" name="id" value="<?=$editItem['id']?>"><?php endif; ?>
               <div class="mb-3">
+                <label class="form-label">Jenis Barang <span class="text-danger">*</span></label>
+                <select name="id_jenis_barang" class="form-select" required>
+                  <option value="">-- Pilih Jenis --</option>
+                  <?php while($j=$jenisList->fetch_assoc()): ?>
+                    <option value="<?=$j['id']?>" <?=($editItem['id_jenis_barang']??'')==$j['id']?'selected':''?>>
+                      [<?=htmlspecialchars($j['kode_jenis'])?>] <?=htmlspecialchars($j['nama_jenis'])?>
+                    </option>
+                  <?php endwhile; ?>
+                </select>
+              </div>
+              <div class="mb-3">
                 <label class="form-label">Kode Barang <span class="text-danger">*</span></label>
                 <input type="text" name="kode_barang" class="form-control" value="<?=htmlspecialchars($editItem['kode_barang']??'')?>" required maxlength="20">
               </div>
@@ -79,17 +90,6 @@ include BASE_PATH . '/includes/sidebar.php';
               <div class="mb-3">
                 <label class="form-label">Satuan <span class="text-danger">*</span></label>
                 <input type="text" name="satuan" class="form-control" value="<?=htmlspecialchars($editItem['satuan']??'')?>" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Jenis Barang <span class="text-danger">*</span></label>
-                <select name="id_jenis_barang" class="form-select" required>
-                  <option value="">-- Pilih Jenis --</option>
-                  <?php while($j=$jenisList->fetch_assoc()): ?>
-                    <option value="<?=$j['id']?>" <?=($editItem['id_jenis_barang']??'')==$j['id']?'selected':''?>>
-                      [<?=htmlspecialchars($j['kode_jenis'])?>] <?=htmlspecialchars($j['nama_jenis'])?>
-                    </option>
-                  <?php endwhile; ?>
-                </select>
               </div>
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save me-1"></i>Simpan</button>
@@ -107,15 +107,16 @@ include BASE_PATH . '/includes/sidebar.php';
           </div>
           <div class="table-wrapper">
             <table class="table" id="barangTable">
-              <thead><tr><th>#</th><th>Kode</th><th>Nama Barang</th><th>Satuan</th><th>Jenis</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Kode Jenis Barang</th><th>Jenis Barang</th><th>Kode Barang</th><th>Nama Barang</th><th>Satuan</th><th>Aksi</th></tr></thead>
               <tbody>
                 <?php $no=1; while($b=$list->fetch_assoc()): ?>
                 <tr>
                   <td><?=$no++?></td>
-                  <td><code><?=htmlspecialchars($b['kode_barang'])?></code></td>
-                  <td><?=htmlspecialchars($b['nama_barang'])?></td>
-                  <td><span class="badge bg-secondary"><?=htmlspecialchars($b['satuan'])?></span></td>
+                  <td><span><?=htmlspecialchars($b['kode_jenis'])?></span></td>
                   <td><?=htmlspecialchars($b['nama_jenis'])?></td>
+                  <td><span><?=htmlspecialchars($b['kode_barang'])?></span></td>
+                  <td><?=htmlspecialchars($b['nama_barang'])?></td>
+                  <td><?=htmlspecialchars($b['satuan'])?></td>
                   <td>
                     <a href="?action=edit&id=<?=$b['id']?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
                     <form method="POST" class="d-inline">
