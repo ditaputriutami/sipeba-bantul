@@ -12,15 +12,9 @@ $role = getUserRole();
 $id_bagian = getUserBagian();
 
 $f_bagian   = ($role === 'superadmin') ? (int)($_GET['id_bagian'] ?? 0) : $id_bagian;
-$f_bulan    = (int)($_GET['bulan'] ?? date('n'));
 $f_tahun    = (int)($_GET['tahun'] ?? date('Y'));
-
-// Nama bulan dalam bahasa Indonesia
-$namaBulan = [
-    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-];
+$f_dari     = $_GET['dari'] ?? date('Y-m-01');
+$f_sampai   = $_GET['sampai'] ?? date('Y-m-t');
 
 $bagianFilter = '';
 $bagianFilterPenerimaan = '';
@@ -34,7 +28,7 @@ if ($role !== 'superadmin') {
     $bagianFilterPengurangan = "AND pg.id_bagian=$id_bagian";
 }
 
-// Query: ambil data transaksi per bulan yang dipilih
+// Query: ambil data transaksi per periode yang dipilih
 $query = "
     SELECT 
         jb.id as id_jenis,
@@ -44,26 +38,24 @@ $query = "
         b.nama_barang,
         b.satuan,
         
-        /* === PENERIMAAN BULAN INI === */
+        /* === PENERIMAAN PERIODE INI === */
         COALESCE((
             SELECT SUM(p.jumlah * p.harga_satuan) 
             FROM penerimaan p 
             WHERE p.id_barang=b.id 
                 AND p.status='disetujui' 
-                AND YEAR(p.tanggal) = $f_tahun 
-                AND MONTH(p.tanggal) = $f_bulan
+                AND p.tanggal BETWEEN '$f_dari' AND '$f_sampai'
                 $bagianFilterPenerimaan
         ), 0) AS penerimaan_nilai,
         
-        /* === PENGURANGAN BULAN INI === */
+        /* === PENGURANGAN PERIODE INI === */
         COALESCE((
             SELECT SUM(pd.jumlah_dipotong * pd.harga_satuan) 
             FROM pengurangan pg 
             JOIN pengurangan_detail pd ON pd.id_pengurangan=pg.id 
             WHERE pg.id_barang=b.id 
                 AND pg.status='disetujui' 
-                AND YEAR(pg.tanggal) = $f_tahun 
-                AND MONTH(pg.tanggal) = $f_bulan
+                AND pg.tanggal BETWEEN '$f_dari' AND '$f_sampai'
                 $bagianFilterPengurangan
         ), 0) AS pengurangan_nilai
         
@@ -84,7 +76,7 @@ while ($row = $result->fetch_assoc()) {
     $pengurangan = $row['pengurangan_nilai'];
     $saldo_akhir = $penerimaan - $pengurangan;
     
-    // Skip barang yang tidak ada transaksi di bulan ini
+    // Skip barang yang tidak ada transaksi di periode ini
     if ($penerimaan == 0 && $pengurangan == 0) {
         continue;
     }
@@ -136,8 +128,9 @@ $years = range(date('Y')-2, date('Y')+1);
 
 // Export Excel
 if (isset($_GET['export'])) {
+    $periodeLabel = date('d-m-Y', strtotime($f_dari)) . '_sd_' . date('d-m-Y', strtotime($f_sampai));
     header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-    header('Content-Disposition: attachment; filename="rekonsiliasi_' . $namaBulan[$f_bulan] . '_' . $f_tahun . '.xls"');
+    header('Content-Disposition: attachment; filename="rekonsiliasi_' . $periodeLabel . '.xls"');
     echo "\xEF\xBB\xBF";
     
     // Header
@@ -150,7 +143,7 @@ if (isset($_GET['export'])) {
     
     // Periode
     echo "<tr>";
-    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>PER " . strtoupper($namaBulan[$f_bulan]) . " " . $f_tahun . "</td>";
+    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>PERIODE " . date('d/m/Y', strtotime($f_dari)) . " s.d. " . date('d/m/Y', strtotime($f_sampai)) . "</td>";
     echo "</tr>";
     
     // Bagian
@@ -175,7 +168,7 @@ if (isset($_GET['export'])) {
     // Data rows
     if (empty($dataByJenis)) {
         echo "<tr>";
-        echo "<td colspan='5' align='center' style='border: 1px solid #000; padding: 15px; font-size: 11pt;'>Tidak ada transaksi pada bulan " . $namaBulan[$f_bulan] . " " . $f_tahun . "</td>";
+        echo "<td colspan='5' align='center' style='border: 1px solid #000; padding: 15px; font-size: 11pt;'>Tidak ada transaksi pada periode " . date('d/m/Y', strtotime($f_dari)) . " s.d. " . date('d/m/Y', strtotime($f_sampai)) . "</td>";
         echo "</tr>";
     } else {
         $no = 1;
@@ -220,7 +213,7 @@ include BASE_PATH . '/includes/sidebar.php';
       <div class="card-body py-2">
         <form method="GET" class="row g-2 align-items-end">
           <?php if($role==='superadmin'): ?>
-          <div class="col-md-3">
+          <div class="col-auto">
             <label class="form-label fw-semibold">Bagian</label>
             <select name="id_bagian" class="form-select form-select-sm">
               <option value="">Semua Bagian</option>
@@ -235,14 +228,6 @@ include BASE_PATH . '/includes/sidebar.php';
           </div>
           <?php endif; ?>
           <div class="col-auto">
-            <label class="form-label fw-semibold">Bulan</label>
-            <select name="bulan" class="form-select form-select-sm">
-              <?php for($m=1; $m<=12; $m++): ?>
-                <option value="<?=$m?>" <?=$f_bulan==$m?'selected':''?>><?=$namaBulan[$m]?></option>
-              <?php endfor; ?>
-            </select>
-          </div>
-          <div class="col-auto">
             <label class="form-label fw-semibold">Tahun</label>
             <select name="tahun" class="form-select form-select-sm">
               <?php foreach($years as $y): ?>
@@ -251,7 +236,20 @@ include BASE_PATH . '/includes/sidebar.php';
             </select>
           </div>
           <div class="col-auto">
+            <label class="form-label fw-semibold">Dari Tanggal</label>
+            <input type="date" name="dari" class="form-control form-control-sm" value="<?=htmlspecialchars($f_dari)?>" required>
+          </div>
+          <div class="col-auto">
+            <label class="form-label fw-semibold">Sampai Tanggal</label>
+            <input type="date" name="sampai" class="form-control form-control-sm" value="<?=htmlspecialchars($f_sampai)?>" required>
+          </div>
+          <div class="col-auto">
             <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Tampilkan</button>
+          </div>
+          <div class="col-auto">
+            <a href="<?=BASE_URL?>/laporan/stock_opname_detail.php" class="btn btn-info btn-sm text-white"><i class="bi bi-eye me-1"></i>Lihat Detail</a>
+          </div>
+          <div class="col-auto">
             <a href="?<?=http_build_query(array_merge($_GET,['export'=>1]))?>" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Export Excel</a>
           </div>
         </form>
@@ -262,7 +260,7 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="card">
       <div class="card-header text-center py-3" style="background: white; color: #000; border-bottom: 2px solid #000;">
         <h4 class="mb-2 fw-bold" style="font-size: 14pt;">BERITA ACARA REKONSILIASI</h4>
-        <h5 class="mb-1" style="font-size: 11pt;">PER <?=strtoupper($namaBulan[$f_bulan])?> <?=$f_tahun?></h5>
+        <h5 class="mb-1" style="font-size: 11pt;">PERIODE <?=date('d/m/Y', strtotime($f_dari))?> s.d. <?=date('d/m/Y', strtotime($f_sampai))?></h5>
         <h5 class="mb-0" style="font-size: 11pt;"><?=strtoupper($namaBagianTerpilih)?></h5>
       </div>
       
@@ -282,7 +280,7 @@ include BASE_PATH . '/includes/sidebar.php';
             <tr>
               <td colspan="5" class="text-center text-muted py-4">
                 <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                Tidak ada transaksi pada bulan <?=$namaBulan[$f_bulan]?> <?=$f_tahun?>
+                Tidak ada transaksi pada periode <?=date('d/m/Y', strtotime($f_dari))?> s.d. <?=date('d/m/Y', strtotime($f_sampai))?>
               </td>
             </tr>
             <?php else: ?>
@@ -317,7 +315,7 @@ include BASE_PATH . '/includes/sidebar.php';
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <i class="bi bi-info-circle me-1"></i>
-            Laporan ini menampilkan transaksi yang telah disetujui pada bulan terpilih
+            Laporan ini menampilkan transaksi yang telah disetujui pada periode terpilih
           </div>
           <div class="text-end">
             <strong>Tanggal Cetak:</strong> <?=date('d-m-Y H:i')?> WIB
