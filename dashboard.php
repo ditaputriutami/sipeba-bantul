@@ -5,7 +5,9 @@ requireLogin();
 $role = getUserRole();
 
 // Route to the appropriate dashboard based on role
-$dashboardFile = __DIR__ . "/dashboards/{$role}.php";
+// Map superadmin to admin dashboard
+$dashboardRole = ($role === 'superadmin') ? 'admin' : $role;
+$dashboardFile = __DIR__ . "/dashboards/{$dashboardRole}.php";
 
 if (file_exists($dashboardFile)) {
     require_once $dashboardFile;

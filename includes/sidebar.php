@@ -83,21 +83,30 @@ function isActive(string $path): string {
     </div>
     <?php endif; ?>
 
-    <?php if ($role === 'kepala'): ?>
-    <!-- PERSETUJUAN (KEPALA) -->
+    <?php if (in_array($role, ['kepala', 'superadmin'])): ?>
+    <!-- PERSETUJUAN (KEPALA & SUPERADMIN) -->
     <div class="menu-group">
       <span class="menu-label">Persetujuan</span>
       <a href="<?= BASE_URL ?>/persetujuan/transaksi/index.php" class="menu-item <?= isActive('/persetujuan/transaksi/') ?>">
         <i class="bi bi-check2-square"></i><span>Approval Transaksi</span>
         <?php
-        // Count pending
+        // Count pending dari penerimaan
         $stmt_p = $conn->prepare("SELECT COUNT(*) as c FROM penerimaan WHERE status='pending' AND id_bagian=?");
         $stmt_p->bind_param('i', $user['id_bagian']);
         $stmt_p->execute();
-        $pendingCount = $stmt_p->get_result()->fetch_assoc()['c'];
+        $penerimaanPending = $stmt_p->get_result()->fetch_assoc()['c'];
         $stmt_p->close();
-        if ($pendingCount > 0): ?>
-          <span class="badge bg-danger ms-auto"><?= $pendingCount ?></span>
+        
+        // Count pending dari pengurangan
+        $stmt_g = $conn->prepare("SELECT COUNT(*) as c FROM pengurangan WHERE status='pending' AND id_bagian=?");
+        $stmt_g->bind_param('i', $user['id_bagian']);
+        $stmt_g->execute();
+        $penguranganPending = $stmt_g->get_result()->fetch_assoc()['c'];
+        $stmt_g->close();
+        
+        $totalPending = $penerimaanPending + $penguranganPending;
+        if ($totalPending > 0): ?>
+          <span class="badge bg-danger ms-auto"><?= $totalPending ?></span>
         <?php endif; ?>
       </a>
       <a href="<?= BASE_URL ?>/persetujuan/stock_opname/index.php" class="menu-item <?= isActive('/persetujuan/stock_opname/') ?>">

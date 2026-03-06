@@ -69,35 +69,49 @@ include BASE_PATH . '/includes/sidebar.php';
       </div>
     <?php endif; ?>
 
+    <style>
+      a.stat-card-link { text-decoration: none; display: block; }
+      a.stat-card-link .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+      a.stat-card-link:hover .stat-card { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    </style>
+
     <!-- Stat Cards -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-xl-3">
-        <div class="stat-card blue">
-          <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-archive text-white"></i></div>
-          <div class="stat-value"><?= number_format($totalBarang) ?></div>
-          <div class="stat-label">Total Jenis Barang</div>
-        </div>
+        <a href="<?= BASE_URL ?>/master_data/barang/index.php" class="stat-card-link">
+          <div class="stat-card blue">
+            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-archive text-white"></i></div>
+            <div class="stat-value"><?= number_format($totalBarang) ?></div>
+            <div class="stat-label">Total Jenis Barang</div>
+          </div>
+        </a>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card green">
-          <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-in-down text-white"></i></div>
-          <div class="stat-value"><?= number_format($totalPenerimaan) ?></div>
-          <div class="stat-label">Penerimaan Disetujui</div>
-        </div>
+        <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php?status=disetujui" class="stat-card-link">
+          <div class="stat-card green">
+            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-in-down text-white"></i></div>
+            <div class="stat-value"><?= number_format($totalPenerimaan) ?></div>
+            <div class="stat-label">Penerimaan Disetujui</div>
+          </div>
+        </a>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card orange">
-          <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-up text-white"></i></div>
-          <div class="stat-value"><?= number_format($totalPengurangan) ?></div>
-          <div class="stat-label">Pengurangan Disetujui</div>
-        </div>
+        <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php?status=disetujui" class="stat-card-link">
+          <div class="stat-card orange">
+            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-up text-white"></i></div>
+            <div class="stat-value"><?= number_format($totalPengurangan) ?></div>
+            <div class="stat-label">Pengurangan Disetujui</div>
+          </div>
+        </a>
       </div>
       <div class="col-6 col-xl-3">
-        <div class="stat-card red">
-          <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-hourglass-split text-white"></i></div>
-          <div class="stat-value"><?= number_format($pendingAll) ?></div>
-          <div class="stat-label">Transaksi Pending</div>
-        </div>
+        <a href="<?= BASE_URL ?>/persetujuan/transaksi/index.php" class="stat-card-link">
+          <div class="stat-card red">
+            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-hourglass-split text-white"></i></div>
+            <div class="stat-value"><?= number_format($pendingAll) ?></div>
+            <div class="stat-label">Transaksi Pending</div>
+          </div>
+        </a>
       </div>
     </div>
 

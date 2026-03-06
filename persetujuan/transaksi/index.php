@@ -103,6 +103,13 @@ $pengPending = $conn->query("
     WHERE p.status='pending' $bagianFilter ORDER BY p.created_at
 ");
 
+// Hitung jumlah pengurangan pending
+$pengPendingArray = [];
+while($row = $pengPending->fetch_assoc()) {
+    $pengPendingArray[] = $row;
+}
+$jumlahPengPending = count($pengPendingArray);
+
 include BASE_PATH . '/includes/header.php';
 include BASE_PATH . '/includes/sidebar.php';
 ?>
@@ -148,13 +155,13 @@ include BASE_PATH . '/includes/sidebar.php';
     </div>
 
     <!-- PENGURANGAN PENDING -->
-    <h6 class="fw-bold text-warning mb-2"><i class="bi bi-box-arrow-up me-1"></i>Pengurangan — Menunggu Persetujuan</h6>
+    <h6 class="fw-bold text-warning mb-2"><i class="bi bi-box-arrow-up me-1"></i>Pengurangan — Menunggu Persetujuan <?php if($jumlahPengPending > 0): ?><span class="badge bg-danger" style="font-size: 0.75rem;"><?=$jumlahPengPending?></span><?php endif; ?></h6>
     <div class="card">
       <div class="table-wrapper">
         <table class="table">
-          <thead><tr><th>#</th><th>No.Permintaan</th><th>Tanggal</th><th>Barang</th><th>Jumlah</th><th>Stok Tersedia</th><th>Penerima</th><th>Oleh</th><th>Aksi</th></tr></thead>
+          <thead><tr><th>#</th><th>No.Permintaan</th><th>Tanggal</th><th>Barang</th><th>Jumlah</th><th>Stok Tersedia</th><th>Penerima</th><th>PENERIMA</th><th>Oleh</th><th>Aksi</th></tr></thead>
           <tbody>
-            <?php $no=1; $found2=false; while($p=$pengPending->fetch_assoc()): $found2=true; ?>
+            <?php $no=1; $found2=false; foreach($pengPendingArray as $p): $found2=true; ?>
             <tr>
               <td><?=$no++?></td>
               <td><code><?=htmlspecialchars($p['no_permintaan'])?></code></td>
@@ -163,6 +170,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <td><?=number_format($p['jumlah'])?> <?=$p['satuan']?></td>
               <td><span class="badge <?=$p['stok_tersedia']>=$p['jumlah']?'bg-success':'bg-danger'?>"><?=$p['stok_tersedia']??0?></span></td>
               <td><?=htmlspecialchars($p['penerima']??'—')?></td>
+              <td><span class="badge bg-warning text-dark">Menunggu</span></td>
               <td><?=htmlspecialchars($p['nama_user'])?></td>
               <td>
                 <?php if(($p['stok_tersedia']??0) >= $p['jumlah']): ?>
@@ -173,8 +181,8 @@ include BASE_PATH . '/includes/sidebar.php';
                 <button class="btn btn-sm btn-danger" onclick="openModal('pengurangan',<?=$p['id']?>,'tolak')"><i class="bi bi-x-lg"></i></button>
               </td>
             </tr>
-            <?php endwhile; if(!$found2): ?>
-            <tr><td colspan="9" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td></tr>
+            <?php endforeach; if(!$found2): ?>
+            <tr><td colspan="10" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>

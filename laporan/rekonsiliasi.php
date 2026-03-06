@@ -145,31 +145,31 @@ if (isset($_GET['export'])) {
     
     // Judul Utama
     echo "<tr>";
-    echo "<td colspan='5' align='center' style='font-size: 14pt; font-weight: bold; padding: 15px; border: 1px solid #000;'>BERITA ACARA REKONSILIASI</td>";
+    echo "<td colspan='5' align='center' style='font-size: 14pt; font-weight: bold; padding: 15px; border: none;'>BERITA ACARA REKONSILIASI</td>";
     echo "</tr>";
     
     // Periode
     echo "<tr>";
-    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: 1px solid #000;'>PER " . strtoupper($namaBulan[$f_bulan]) . " " . $f_tahun . "</td>";
+    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>PER " . strtoupper($namaBulan[$f_bulan]) . " " . $f_tahun . "</td>";
     echo "</tr>";
     
     // Bagian
     echo "<tr>";
-    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: 1px solid #000;'>" . strtoupper($namaBagianTerpilih) . "</td>";
+    echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>" . strtoupper($namaBagianTerpilih) . "</td>";
     echo "</tr>";
     
     // Spasi
     echo "<tr>";
-    echo "<td colspan='5' style='border: none; padding: 5px;'></td>";
+    echo "<td colspan='5' style='border: none; padding: 3px;'></td>";
     echo "</tr>";
     
     // Column Headers
-    echo "<tr style='background-color: #cccccc; font-weight: bold; font-size: 11pt;'>";
-    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 8%;'>NO.</td>";
-    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 35%;'>URAIAN</td>";
-    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%;'>PENERIMAAN</td>";
-    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%;'>PENGURANGAN</td>";
-    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%;'>SALDO AKHIR</td>";
+    echo "<tr style='font-weight: bold; font-size: 11pt;'>";
+    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 8%; background-color: #cccccc;'>NO.</td>";
+    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 35%; background-color: #cccccc;'>URAIAN</td>";
+    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>PENERIMAAN</td>";
+    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>PENGURANGAN</td>";
+    echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>SALDO AKHIR</td>";
     echo "</tr>";
     
     // Data rows
@@ -181,9 +181,9 @@ if (isset($_GET['export'])) {
         $no = 1;
         foreach ($dataByJenis as $jenis) {
             // Baris Jenis Barang (header)
-            echo "<tr style='background-color: #e8e8e8; font-weight: bold; font-size: 11pt;'>";
-            echo "<td align='center' style='border: 1px solid #000; padding: 10px;'>{$no}</td>";
-            echo "<td colspan='4' style='border: 1px solid #000; padding: 10px;'>" . strtoupper($jenis['nama_jenis']) . "</td>";
+            echo "<tr style='font-weight: bold; font-size: 11pt;'>";
+            echo "<td align='center' style='border: 1px solid #000; padding: 10px; background-color: #e8e8e8;'>{$no}</td>";
+            echo "<td colspan='4' style='border: 1px solid #000; padding: 10px; background-color: #e8e8e8;'>" . strtoupper($jenis['nama_jenis']) . "</td>";
             echo "</tr>";
             $no++;
             
