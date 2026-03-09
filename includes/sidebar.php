@@ -68,8 +68,8 @@ function isActive(string $path): string
       <?php endif; ?>
     </div>
 
-    <?php if (in_array($role, ['pengurus', 'superadmin'])): ?>
-      <!-- TRANSAKSI (PENGURUS) -->
+    <?php if (in_array($role, ['kepala', 'pengurus', 'superadmin'])): ?>
+      <!-- TRANSAKSI (KEPALA & PENGURUS) -->
       <div class="menu-group">
         <span class="menu-label">Transaksi</span>
         <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
