@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus', 'kepala', 'superadmin']);
+requireRole(['pengurus','kepala','superadmin']);
 $pageTitle = 'Pengurangan Barang';
 $user = getCurrentUser();
 $role = getUserRole();
@@ -9,7 +9,7 @@ $id_bagian = getUserBagian();
 $filterBagian = ($role === 'superadmin') ? '' : "AND p.id_bagian=$id_bagian";
 $filterStatus = $_GET['status'] ?? '';
 $where = "WHERE 1=1 $filterBagian";
-if ($filterStatus) $where .= " AND p.status='" . mysqli_real_escape_string($conn, $filterStatus) . "'";
+if ($filterStatus) $where .= " AND p.status='".mysqli_real_escape_string($conn,$filterStatus)."'";
 
 $list = $conn->query("
     SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver
@@ -31,27 +31,28 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="topbar-title"><i class="bi bi-box-arrow-up me-2"></i>Pengurangan Barang</div>
   </div>
   <div class="page-content">
-    <?php $flash = getFlash();
-    if ($flash): ?>
-      <div class="alert alert-<?= $flash['type'] === 'error' ? 'danger' : $flash['type'] ?> auto-dismiss alert-dismissible fade show">
-        <?= htmlspecialchars($flash['message']) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <?php $flash=getFlash(); if($flash): ?>
+      <div class="alert alert-<?=$flash['type']==='error'?'danger':$flash['type']?> auto-dismiss alert-dismissible fade show">
+        <?=htmlspecialchars($flash['message'])?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     <?php endif; ?>
     <div class="card mb-3">
       <div class="card-body py-2">
-        <div class="d-flex justify-content-between align-items-center">
-          <form method="GET" class="d-flex gap-2 align-items-center">
-            <select name="status" class="form-select form-select-sm" style="width: auto;">
+        <form method="GET" class="row g-2 align-items-end">
+          <div class="col-auto">
+            <select name="status" class="form-select form-select-sm">
               <option value="">Semua Status</option>
-              <option value="pending" <?= $filterStatus === 'pending' ? 'selected' : '' ?>>Pending</option>
-              <option value="disetujui" <?= $filterStatus === 'disetujui' ? 'selected' : '' ?>>Disetujui</option>
-              <option value="ditolak" <?= $filterStatus === 'ditolak' ? 'selected' : '' ?>>Ditolak</option>
+              <option value="pending" <?=$filterStatus==='pending'?'selected':''?>>Pending</option>
+              <option value="disetujui" <?=$filterStatus==='disetujui'?'selected':''?>>Disetujui</option>
+              <option value="ditolak" <?=$filterStatus==='ditolak'?'selected':''?>>Ditolak</option>
             </select>
-            <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button>
-          </form>
-          <?php if (in_array($role, ['pengurus', 'kepala', 'superadmin'])): ?>
-            <a href="create.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Pengurangan</a>
-          <?php endif; ?>
-        </div>
+          </div>
+          <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button></div>
+          <div class="col-auto ms-auto">
+            <?php if(in_array($role,['pengurus','kepala'])): ?>
+            <a href="create.php" class="btn btn-warning btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Pengurangan</a>
+            <?php endif; ?>
+          </div>
+        </form>
       </div>
     </div>
     <div class="card">
@@ -66,7 +67,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th><th>No. Permintaan</th><th>Tanggal</th><th>Nama Barang</th><th>Jumlah</th>
               <th>Penerima</th><th>Tgl Penyerahan</th>
               <?php if($role==='superadmin'): ?><th>Bagian</th><?php endif; ?>
-              <th>Status</th>
+              <th>Status</th><th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -88,6 +89,14 @@ include BASE_PATH . '/includes/sidebar.php';
                 <span class="badge-sipeba <?=$sc[$p['status']]??''?>">
                   <i class="bi <?=$si[$p['status']]??''?>"></i> <?=ucfirst($p['status'])?>
                 </span>
+              </td>
+              <td>
+                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala'])): ?>
+                  <form method="POST" action="delete.php" class="d-inline">
+                    <input type="hidden" name="id" value="<?=$p['id']?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
+                  </form>
+                <?php endif; ?>
               </td>
             </tr>
             <?php endwhile; ?>
