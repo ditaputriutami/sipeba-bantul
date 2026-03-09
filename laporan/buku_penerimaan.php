@@ -14,6 +14,8 @@ $id_bagian = getUserBagian();
 
 // Filter params
 $f_bagian  = ($role === 'superadmin') ? (int)($_GET['id_bagian'] ?? 0) : $id_bagian;
+// Sekretariat Daerah (id=9) can see all departments
+if ($id_bagian == 9) $f_bagian = 0;
 $f_dari    = $_GET['dari'] ?? date('Y-m-01');
 $f_sampai  = $_GET['sampai'] ?? date('Y-m-d');
 $f_status  = $_GET['status'] ?? 'disetujui';
@@ -164,11 +166,19 @@ include BASE_PATH . '/includes/sidebar.php';
             <div class="col-md-3">
               <label class="form-label fw-semibold">Bagian</label>
               <select name="id_bagian" class="form-select form-select-sm">
-                <option value="">Semua Bagian</option>
+                <option value="">Sekretariat Daerah</option>
                 <?php while ($bg = $bagianList->fetch_assoc()): ?>
+                  <?php if ($bg['id'] == 9) continue; ?>
                   <option value="<?= $bg['id'] ?>" <?= $f_bagian == $bg['id'] ? 'selected' : '' ?>><?= htmlspecialchars($bg['nama']) ?></option>
                 <?php endwhile; ?>
               </select>
+            </div>
+          <?php else: ?>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Bagian</label>
+              <div class="form-control form-control-sm" style="background-color: #e9ecef; border: 1px solid #ced4da;">
+                <strong><?= htmlspecialchars($id_bagian == 9 ? 'Sekretariat Daerah' : (isset($user['nama_bagian']) ? $user['nama_bagian'] : '')) ?></strong>
+              </div>
             </div>
           <?php endif; ?>
           <div class="col-md-2">

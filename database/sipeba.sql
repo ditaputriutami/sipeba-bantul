@@ -25,7 +25,7 @@ INSERT INTO `bagian` (`kode`, `nama`) VALUES
 ('UMPROTK', 'Bagian Umum dan Protokol'),
 ('KESRA',   'Bagian Kesejahteraan Rakyat'),
 ('PBJ',     'Bagian Pengadaan Barang dan Jasa'),
-('SETDA',   'Bagian Sekretariat Daerah');
+('SETDA',   'Sekretariat Daerah');
 
 -- ============================================================
 -- Tabel: users
