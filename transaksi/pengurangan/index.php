@@ -11,15 +11,26 @@ $filterStatus = $_GET['status'] ?? '';
 $where = "WHERE 1=1 $filterBagian";
 if ($filterStatus) $where .= " AND p.status='" . mysqli_real_escape_string($conn, $filterStatus) . "'";
 
+// Query untuk mendapatkan detail batch per pengurangan
 $list = $conn->query("
-    SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver
+    SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver,
+           pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
+           pen.tanggal as batch_tanggal, pen.no_faktur as batch_no_faktur,
+           (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
+            FROM pengurangan_detail pd2 
+            WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total,
+           (SELECT COUNT(*) 
+            FROM pengurangan_detail pd3 
+            WHERE pd3.id_pengurangan = p.id) as batch_count
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     LEFT JOIN users ap ON p.id_approver=ap.id
+    LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
+    LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
     $where
-    ORDER BY p.created_at DESC
+    ORDER BY p.created_at DESC, pd.id ASC
 ");
 
 include BASE_PATH . '/includes/header.php';
@@ -68,46 +79,89 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>Tanggal</th>
               <th>Nama Barang</th>
               <th>Jumlah</th>
-              <th>Penerima</th>
-              <th>Tgl Penyerahan</th>
+              <th>Harga Satuan</th>
+              <th>Jumlah Harga</th>
               <?php if ($role === 'superadmin'): ?><th>Bagian</th><?php endif; ?>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            <?php $no = 1;
-            while ($p = $list->fetch_assoc()): ?>
+            <?php
+            $no = 1;
+            $prevId = null;
+            $rowspanData = [];
+
+            // Hitung rowspan untuk setiap pengurangan
+            $list->data_seek(0);
+            while ($row = $list->fetch_assoc()) {
+              if (!isset($rowspanData[$row['id']])) {
+                $rowspanData[$row['id']] = $row['batch_count'] ?? 1;
+              }
+            }
+
+            // Reset pointer dan tampilkan data
+            $list->data_seek(0);
+            $batchNo = [];
+
+            while ($p = $list->fetch_assoc()):
+              $isFirstRow = ($prevId !== $p['id']);
+              $rowspan = $rowspanData[$p['id']] ?? 1;
+
+              if ($isFirstRow) {
+                $batchNo[$p['id']] = 1;
+              }
+            ?>
               <tr>
-                <td><?= $no++ ?></td>
-                <td><code><?= htmlspecialchars($p['no_permintaan']) ?></code></td>
-                <td><?= formatTanggal($p['tanggal']) ?></td>
-                <td><?= htmlspecialchars($p['nama_barang']) ?></td>
-                <td><?= number_format($p['jumlah']) ?> <?= htmlspecialchars($p['satuan']) ?></td>
-                <td><?= htmlspecialchars($p['penerima'] ?? '—') ?></td>
-                <td><?= $p['tanggal_penyerahan'] ? formatTanggal($p['tanggal_penyerahan']) : '—' ?></td>
-                <?php if ($role === 'superadmin'): ?><td><?= htmlspecialchars($p['nama_bagian']) ?></td><?php endif; ?>
-                <td>
-                  <?php
-                  $sc = ['pending' => 'badge-pending', 'disetujui' => 'badge-approved', 'ditolak' => 'badge-rejected'];
-                  $si = ['pending' => 'bi-clock', 'disetujui' => 'bi-check-circle', 'ditolak' => 'bi-x-circle'];
-                  ?>
-                  <span class="badge-sipeba <?= $sc[$p['status']] ?? '' ?>">
-                    <i class="bi <?= $si[$p['status']] ?? '' ?>"></i> <?= ucfirst($p['status']) ?>
-                  </span>
-                </td>
-                <td>
-                  <?php if ($p['status'] === 'pending' && in_array($role, ['pengurus', 'kepala'])): ?>
-                    <form method="POST" action="delete.php" class="d-inline">
-                      <input type="hidden" name="id" value="<?= $p['id'] ?>">
-                      <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
-                    </form>
-                  <?php else: ?>
-                    <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui atau ditolak"><i class="bi bi-lock"></i></span>
+                <?php if ($isFirstRow): ?>
+                  <td rowspan="<?= $rowspan ?>"><?= $no++ ?></td>
+                  <td rowspan="<?= $rowspan ?>"><code><?= htmlspecialchars($p['no_permintaan']) ?></code></td>
+                  <td rowspan="<?= $rowspan ?>"><?= formatTanggal($p['tanggal']) ?></td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_barang']) ?></td>
+                <?php endif; ?>
+
+                <!-- Jumlah & Harga Satuan per batch -->
+                <td><?= number_format($p['jumlah_dipotong'] ?? $p['jumlah']) ?> <?= htmlspecialchars($p['satuan']) ?>
+                  <?php if ($rowspan > 1): ?>
+                    <small class="text-muted">(Batch <?= $batchNo[$p['id']] ?>)</small>
                   <?php endif; ?>
                 </td>
+                <td class="text-end"><?= formatRupiah($p['batch_harga_satuan'] ?? 0) ?></td>
+
+                <?php if ($isFirstRow): ?>
+                  <td class="text-end" rowspan="<?= $rowspan ?>"><strong><?= formatRupiah($p['jumlah_harga_total']) ?></strong></td>
+                  <?php if ($role === 'superadmin'): ?>
+                    <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_bagian']) ?></td>
+                  <?php endif; ?>
+                  <td rowspan="<?= $rowspan ?>">
+                    <?php
+                    $sc = ['pending' => 'badge-pending', 'disetujui' => 'badge-approved', 'ditolak' => 'badge-rejected'];
+                    $si = ['pending' => 'bi-clock', 'disetujui' => 'bi-check-circle', 'ditolak' => 'bi-x-circle'];
+                    ?>
+                    <span class="badge-sipeba <?= $sc[$p['status']] ?? '' ?>">
+                      <i class="bi <?= $si[$p['status']] ?? '' ?>"></i> <?= ucfirst($p['status']) ?>
+                    </span>
+                  </td>
+                  <td rowspan="<?= $rowspan ?>">
+                    <?php if ($p['status'] === 'pending' && in_array($role, ['pengurus', 'kepala'])): ?>
+                      <a href="edit.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+                      <form method="POST" action="delete.php" class="d-inline">
+                        <input type="hidden" name="id" value="<?= $p['id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
+                      </form>
+                    <?php else: ?>
+                      <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui atau ditolak"><i class="bi bi-lock"></i></span>
+                    <?php endif; ?>
+                  </td>
+                <?php endif; ?>
               </tr>
-            <?php endwhile; ?>
+            <?php
+              if (!$isFirstRow) {
+                $batchNo[$p['id']]++;
+              }
+              $prevId = $p['id'];
+            endwhile;
+            ?>
           </tbody>
         </table>
       </div>
