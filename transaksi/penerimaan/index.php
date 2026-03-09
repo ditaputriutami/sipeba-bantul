@@ -109,6 +109,8 @@ include BASE_PATH . '/includes/sidebar.php';
                     <input type="hidden" name="id" value="<?=$p['id']?>">
                     <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus transaksi ini?" title="Hapus"><i class="bi bi-trash"></i></button>
                   </form>
+                <?php else: ?>
+                  <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui atau ditolak"><i class="bi bi-lock"></i></span>
                 <?php endif; ?>
               </td>
             </tr>
