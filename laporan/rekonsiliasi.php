@@ -262,9 +262,6 @@ include BASE_PATH . '/includes/sidebar.php';
             <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Tampilkan</button>
           </div>
           <div class="col-auto">
-            <a href="<?=BASE_URL?>/laporan/stock_opname_detail.php" class="btn btn-info btn-sm text-white"><i class="bi bi-eye me-1"></i>Lihat Detail</a>
-          </div>
-          <div class="col-auto">
             <a href="?<?=http_build_query(array_merge($_GET,['export'=>1]))?>" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Export Excel</a>
           </div>
         </form>
