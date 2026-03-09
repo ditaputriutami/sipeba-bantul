@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus','kepala','superadmin']);
+requireRole(['pengurus', 'kepala', 'superadmin']);
 $pageTitle = 'Penerimaan Barang';
 $id_bagian = getUserBagian();
 $role = getUserRole();
@@ -12,7 +12,7 @@ $filterBarang = (int)($_GET['id_barang'] ?? 0);
 $filterBagianGet = (int)($_GET['id_bagian'] ?? 0);
 
 $where = "WHERE 1=1 $filterBagian";
-if ($filterStatus) $where .= " AND p.status='".mysqli_real_escape_string($conn,$filterStatus)."'";
+if ($filterStatus) $where .= " AND p.status='" . mysqli_real_escape_string($conn, $filterStatus) . "'";
 if ($filterBarang) $where .= " AND p.id_barang=$filterBarang";
 if ($role === 'superadmin' && $filterBagianGet) $where .= " AND p.id_bagian=$filterBagianGet";
 
@@ -36,30 +36,29 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="topbar-title"><i class="bi bi-box-arrow-in-down me-2"></i>Penerimaan Barang</div>
   </div>
   <div class="page-content">
-    <?php $flash=getFlash(); if($flash): ?>
-      <div class="alert alert-<?=$flash['type']==='error'?'danger':$flash['type']?> auto-dismiss alert-dismissible fade show">
-        <?=htmlspecialchars($flash['message'])?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <?php $flash = getFlash();
+    if ($flash): ?>
+      <div class="alert alert-<?= $flash['type'] === 'error' ? 'danger' : $flash['type'] ?> auto-dismiss alert-dismissible fade show">
+        <?= htmlspecialchars($flash['message']) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     <?php endif; ?>
 
     <!-- Filter bar -->
     <div class="card mb-3">
       <div class="card-body py-2">
-        <form method="GET" class="row g-2 align-items-end">
-          <div class="col-auto">
-            <select name="status" class="form-select form-select-sm">
+        <div class="d-flex justify-content-between align-items-center">
+          <form method="GET" class="d-flex gap-2 align-items-center">
+            <select name="status" class="form-select form-select-sm" style="width: auto;">
               <option value="">Semua Status</option>
-              <option value="pending" <?=$filterStatus==='pending'?'selected':''?>>Pending</option>
-              <option value="disetujui" <?=$filterStatus==='disetujui'?'selected':''?>>Disetujui</option>
-              <option value="ditolak" <?=$filterStatus==='ditolak'?'selected':''?>>Ditolak</option>
+              <option value="pending" <?= $filterStatus === 'pending' ? 'selected' : '' ?>>Pending</option>
+              <option value="disetujui" <?= $filterStatus === 'disetujui' ? 'selected' : '' ?>>Disetujui</option>
+              <option value="ditolak" <?= $filterStatus === 'ditolak' ? 'selected' : '' ?>>Ditolak</option>
             </select>
-          </div>
-          <div class="col-auto"><button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button></div>
-          <div class="col-auto ms-auto">
-            <?php if(in_array($role,['pengurus','kepala'])): ?>
+            <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+          </form>
+          <?php if (in_array($role, ['pengurus', 'kepala', 'superadmin'])): ?>
             <a href="create.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Penerimaan</a>
-            <?php endif; ?>
-          </div>
-        </form>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
 

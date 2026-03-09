@@ -5,9 +5,10 @@ $curPath = $_SERVER['PHP_SELF'];
 $bagianLabel = $user['nama_bagian'] ?? 'Semua Bagian';
 
 // Helper: is active
-function isActive(string $path): string {
-    global $curPath;
-    return (strpos($curPath, $path) !== false) ? 'active' : '';
+function isActive(string $path): string
+{
+  global $curPath;
+  return (strpos($curPath, $path) !== false) ? 'active' : '';
 }
 ?>
 <nav id="sidebar" class="sidebar">
@@ -46,7 +47,7 @@ function isActive(string $path): string {
     <div class="menu-group">
       <span class="menu-label">Utama</span>
       <a href="<?= BASE_URL ?>/dashboard.php"
-         class="menu-item <?= isActive('/dashboard.php') ?>">
+        class="menu-item <?= isActive('/dashboard.php') ?>">
         <i class="bi bi-speedometer2"></i><span>Dashboard</span>
       </a>
     </div>
@@ -61,67 +62,70 @@ function isActive(string $path): string {
         <i class="bi bi-tags"></i><span>Jenis Barang</span>
       </a>
       <?php if ($role === 'superadmin'): ?>
-      <a href="<?= BASE_URL ?>/master_data/users/index.php" class="menu-item <?= isActive('/users/') ?>">
-        <i class="bi bi-people"></i><span>Manajemen User</span>
-      </a>
+        <a href="<?= BASE_URL ?>/master_data/users/index.php" class="menu-item <?= isActive('/users/') ?>">
+          <i class="bi bi-people"></i><span>Manajemen User</span>
+        </a>
       <?php endif; ?>
     </div>
 
     <?php if (in_array($role, ['pengurus', 'superadmin'])): ?>
-    <!-- TRANSAKSI (PENGURUS) -->
-    <div class="menu-group">
-      <span class="menu-label">Transaksi</span>
-      <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
-        <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
-      </a>
-      <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
-        <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
-      </a>
-      <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
-        <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
-      </a>
-    </div>
+      <!-- TRANSAKSI (PENGURUS) -->
+      <div class="menu-group">
+        <span class="menu-label">Transaksi</span>
+        <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
+          <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
+        </a>
+        <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
+          <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
+        </a>
+        <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
+          <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
+        </a>
+      </div>
     <?php endif; ?>
 
     <?php if (in_array($role, ['kepala', 'superadmin'])): ?>
-    <!-- PERSETUJUAN (KEPALA & SUPERADMIN) -->
-    <div class="menu-group">
-      <span class="menu-label">Persetujuan</span>
-      <a href="<?= BASE_URL ?>/persetujuan/transaksi/index.php" class="menu-item <?= isActive('/persetujuan/transaksi/') ?>">
-        <i class="bi bi-check2-square"></i><span>Approval Transaksi</span>
-        <?php
-        // Count pending dari penerimaan
-        $stmt_p = $conn->prepare("SELECT COUNT(*) as c FROM penerimaan WHERE status='pending' AND id_bagian=?");
-        $stmt_p->bind_param('i', $user['id_bagian']);
-        $stmt_p->execute();
-        $penerimaanPending = $stmt_p->get_result()->fetch_assoc()['c'];
-        $stmt_p->close();
-        
-        // Count pending dari pengurangan
-        $stmt_g = $conn->prepare("SELECT COUNT(*) as c FROM pengurangan WHERE status='pending' AND id_bagian=?");
-        $stmt_g->bind_param('i', $user['id_bagian']);
-        $stmt_g->execute();
-        $penguranganPending = $stmt_g->get_result()->fetch_assoc()['c'];
-        $stmt_g->close();
-        
-        $totalPending = $penerimaanPending + $penguranganPending;
-        if ($totalPending > 0): ?>
-          <span class="badge bg-danger ms-auto"><?= $totalPending ?></span>
-        <?php endif; ?>
-      </a>
-      <a href="<?= BASE_URL ?>/persetujuan/stock_opname/index.php" class="menu-item <?= isActive('/persetujuan/stock_opname/') ?>">
-        <i class="bi bi-clipboard2-pulse"></i><span>Approval Stock Opname</span>
-      </a>
-    </div>
-    <div class="menu-group">
-      <span class="menu-label">Transaksi</span>
-      <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
-        <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
-      </a>
-      <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
-        <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
-      </a>
-    </div>
+      <!-- PERSETUJUAN (KEPALA & SUPERADMIN) -->
+      <div class="menu-group">
+        <span class="menu-label">Persetujuan</span>
+        <a href="<?= BASE_URL ?>/persetujuan/transaksi/index.php" class="menu-item <?= isActive('/persetujuan/transaksi/') ?>">
+          <i class="bi bi-check2-square"></i><span>Approval Transaksi</span>
+          <?php
+          // Count pending dari penerimaan
+          $stmt_p = $conn->prepare("SELECT COUNT(*) as c FROM penerimaan WHERE status='pending' AND id_bagian=?");
+          $stmt_p->bind_param('i', $user['id_bagian']);
+          $stmt_p->execute();
+          $penerimaanPending = $stmt_p->get_result()->fetch_assoc()['c'];
+          $stmt_p->close();
+
+          // Count pending dari pengurangan
+          $stmt_g = $conn->prepare("SELECT COUNT(*) as c FROM pengurangan WHERE status='pending' AND id_bagian=?");
+          $stmt_g->bind_param('i', $user['id_bagian']);
+          $stmt_g->execute();
+          $penguranganPending = $stmt_g->get_result()->fetch_assoc()['c'];
+          $stmt_g->close();
+
+          $totalPending = $penerimaanPending + $penguranganPending;
+          if ($totalPending > 0): ?>
+            <span class="badge bg-danger ms-auto"><?= $totalPending ?></span>
+          <?php endif; ?>
+        </a>
+        <a href="<?= BASE_URL ?>/persetujuan/stock_opname/index.php" class="menu-item <?= isActive('/persetujuan/stock_opname/') ?>">
+          <i class="bi bi-clipboard2-pulse"></i><span>Approval Stock Opname</span>
+        </a>
+      </div>
+      <div class="menu-group">
+        <span class="menu-label">Transaksi</span>
+        <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
+          <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
+        </a>
+        <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
+          <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
+        </a>
+        <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
+          <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
+        </a>
+      </div>
     <?php endif; ?>
 
     <!-- LAPORAN (SEMUA ROLE) -->

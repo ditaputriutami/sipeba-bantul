@@ -56,7 +56,10 @@ if (isset($_GET['edit'])) {
   }
 }
 
+// Filter status
+$filterStatus = $_GET['status'] ?? '';
 $filterBagian = ($role === 'superadmin') ? '' : "AND so.id_bagian=$id_bagian";
+$filterStatusWhere = $filterStatus ? "AND so.status='" . mysqli_real_escape_string($conn, $filterStatus) . "'" : '';
 $list = $conn->query("
     SELECT so.*, 
            b.nama_barang, b.kode_barang, b.satuan, 
@@ -66,7 +69,7 @@ $list = $conn->query("
     JOIN barang b ON so.id_barang=b.id 
     JOIN jenis_barang j ON b.id_jenis_barang=j.id
     JOIN bagian bg ON so.id_bagian=bg.id
-    WHERE 1=1 $filterBagian 
+    WHERE 1=1 $filterBagian $filterStatusWhere
     ORDER BY so.tanggal DESC, so.id DESC 
     LIMIT 50
 ");
@@ -90,11 +93,24 @@ include BASE_PATH . '/includes/sidebar.php';
         <?= htmlspecialchars($flash['message']) ?><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     <?php endif; ?>
 
-    <!-- Tombol Tambah -->
-    <div class="mb-3">
-      <button class="btn btn-primary" id="btnTambahSO" onclick="toggleFormSO()">
-        <i class="bi bi-plus-lg me-1"></i>Tambah Stock Opname
-      </button>
+    <!-- Filter dan Tombol Tambah -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <form method="GET" class="d-flex gap-2 align-items-center">
+            <select name="status" class="form-select form-select-sm" style="width: auto;">
+              <option value="">Semua Status</option>
+              <option value="pending" <?= $filterStatus === 'pending' ? 'selected' : '' ?>>Pending</option>
+              <option value="disetujui" <?= $filterStatus === 'disetujui' ? 'selected' : '' ?>>Disetujui</option>
+              <option value="ditolak" <?= $filterStatus === 'ditolak' ? 'selected' : '' ?>>Ditolak</option>
+            </select>
+            <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+          </form>
+          <button class="btn btn-primary btn-sm" id="btnTambahSO" onclick="toggleFormSO()">
+            <i class="bi bi-plus-lg me-1"></i>Tambah Stock Opname
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Form Stock Opname (Hidden by default) -->
