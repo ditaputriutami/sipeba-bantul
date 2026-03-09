@@ -9,7 +9,9 @@ if ($id) {
     $tx = $conn->query("SELECT id, id_bagian, status FROM penerimaan WHERE id=$id")->fetch_assoc();
     if ($tx) {
         // Cek bagian access
-        if ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
+        if ($tx['status'] !== 'pending') {
+            setFlash('error','Hanya transaksi pending yang dapat dihapus.');
+        } elseif ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
             $conn->query("DELETE FROM penerimaan WHERE id=$id");
             setFlash('success','Penerimaan berhasil dihapus.');
         } else {

@@ -8,7 +8,9 @@ $id_bagian = getUserBagian();
 if ($id) {
     $tx = $conn->query("SELECT id, id_bagian, status FROM pengurangan WHERE id=$id")->fetch_assoc();
     if ($tx) {
-        if ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
+        if ($tx['status'] !== 'pending') {
+            setFlash('error','Hanya transaksi pending yang dapat dihapus.');
+        } elseif ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
             // Hapus detail FIFO terlebih dahulu (FK constraint)
             $conn->query("DELETE FROM pengurangan_detail WHERE id_pengurangan=$id");
             $conn->query("DELETE FROM pengurangan WHERE id=$id");

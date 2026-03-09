@@ -103,7 +103,7 @@ include BASE_PATH . '/includes/sidebar.php';
                 <?php endif; ?>
               </td>
               <td>
-                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala'])): ?>
+                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala','superadmin'])): ?>
                   <a href="edit.php?id=<?=$p['id']?>" class="btn btn-sm btn-outline-primary btn-icon" title="Edit"><i class="bi bi-pencil"></i></a>
                   <form method="POST" action="delete.php" class="d-inline">
                     <input type="hidden" name="id" value="<?=$p['id']?>">
