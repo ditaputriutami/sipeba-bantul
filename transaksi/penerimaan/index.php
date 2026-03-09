@@ -75,7 +75,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th><th>No. Faktur</th><th>Tanggal</th><th>Dari / Pemasok</th><th>Nama Barang</th>
               <th>Jumlah</th><th>Harga Satuan</th><th>Total</th>
               <?php if($role==='superadmin'): ?><th>Bagian</th><?php endif; ?>
-              <th>Status</th><th>Aksi</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -100,15 +100,6 @@ include BASE_PATH . '/includes/sidebar.php';
                 </span>
                 <?php if($p['status']==='ditolak'&&$p['catatan_approval']): ?>
                   <br><small class="text-muted" title="<?=htmlspecialchars($p['catatan_approval'])?>"><i class="bi bi-info-circle"></i> <?=htmlspecialchars(substr($p['catatan_approval'],0,30))?>...</small>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala'])): ?>
-                  <a href="edit.php?id=<?=$p['id']?>" class="btn btn-sm btn-outline-primary btn-icon" title="Edit"><i class="bi bi-pencil"></i></a>
-                  <form method="POST" action="delete.php" class="d-inline">
-                    <input type="hidden" name="id" value="<?=$p['id']?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus transaksi ini?" title="Hapus"><i class="bi bi-trash"></i></button>
-                  </form>
                 <?php endif; ?>
               </td>
             </tr>

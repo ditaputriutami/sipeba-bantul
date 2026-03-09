@@ -67,7 +67,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th><th>No. Permintaan</th><th>Tanggal</th><th>Nama Barang</th><th>Jumlah</th>
               <th>Penerima</th><th>Tgl Penyerahan</th>
               <?php if($role==='superadmin'): ?><th>Bagian</th><?php endif; ?>
-              <th>Status</th><th>Aksi</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -89,14 +89,6 @@ include BASE_PATH . '/includes/sidebar.php';
                 <span class="badge-sipeba <?=$sc[$p['status']]??''?>">
                   <i class="bi <?=$si[$p['status']]??''?>"></i> <?=ucfirst($p['status'])?>
                 </span>
-              </td>
-              <td>
-                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala'])): ?>
-                  <form method="POST" action="delete.php" class="d-inline">
-                    <input type="hidden" name="id" value="<?=$p['id']?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
-                  </form>
-                <?php endif; ?>
               </td>
             </tr>
             <?php endwhile; ?>

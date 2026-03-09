@@ -216,13 +216,10 @@ include BASE_PATH . '/includes/sidebar.php';
               <th class="text-center">Selisih</th>
               <th>Keterangan</th>
               <th>Status</th>
-              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            <?php while ($s = $list->fetch_assoc()):
-              $canEdit = in_array($s['status'], ['pending', 'ditolak']);
-            ?>
+            <?php while ($s = $list->fetch_assoc()): ?>
               <tr>
                 <td><?= formatTanggal($s['tanggal']) ?></td>
                 <td><code><?= htmlspecialchars($s['kode_jenis']) ?></code></td>
@@ -243,17 +240,6 @@ include BASE_PATH . '/includes/sidebar.php';
                   <span class="badge-sipeba <?= $sc[$s['status']] ?? '' ?>">
                     <i class="bi <?= $si[$s['status']] ?? '' ?>"></i> <?= ucfirst($s['status']) ?>
                   </span>
-                </td>
-                <td>
-                  <?php if ($canEdit): ?>
-                    <a href="?edit=<?= $s['id'] ?>" class="text-primary me-2" title="Edit"><i class="bi bi-pencil-square"></i></a>
-                    <form method="POST" action="delete.php" class="d-inline" onsubmit="return confirm('Hapus data ini?')">
-                      <input type="hidden" name="id" value="<?= $s['id'] ?>">
-                      <button type="submit" class="btn p-0 text-danger border-0 bg-transparent" title="Hapus"><i class="bi bi-trash"></i></button>
-                    </form>
-                  <?php else: ?>
-                    <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui"><i class="bi bi-lock"></i></span>
-                  <?php endif; ?>
                 </td>
               </tr>
             <?php endwhile; ?>
