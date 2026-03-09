@@ -52,7 +52,18 @@ if ($action === 'edit' && $id) {
 }
 
 $jenisList = $conn->query("SELECT * FROM jenis_barang ORDER BY kode_jenis");
-$list      = $conn->query("SELECT b.*, j.nama_jenis, j.kode_jenis FROM barang b JOIN jenis_barang j ON b.id_jenis_barang=j.id ORDER BY b.kode_barang");
+$list      = $conn->query("
+  SELECT 
+    b.*, 
+    j.nama_jenis, 
+    j.kode_jenis,
+    COALESCE(SUM(sc.stok), 0) as stok_tersedia
+  FROM barang b 
+  JOIN jenis_barang j ON b.id_jenis_barang=j.id 
+  LEFT JOIN stok_current sc ON sc.id_barang=b.id
+  GROUP BY b.id
+  ORDER BY b.kode_barang
+");
 
 include BASE_PATH . '/includes/header.php';
 include BASE_PATH . '/includes/sidebar.php';
@@ -132,6 +143,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <th>Kode Barang</th>
                   <th>Nama Barang</th>
                   <th>Satuan</th>
+                  <th>Stok Tersedia</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -145,6 +157,11 @@ include BASE_PATH . '/includes/sidebar.php';
                     <td><span><?= htmlspecialchars($b['kode_barang']) ?></span></td>
                     <td><?= htmlspecialchars($b['nama_barang']) ?></td>
                     <td><?= htmlspecialchars($b['satuan']) ?></td>
+                    <td>
+                      <span class="badge <?= $b['stok_tersedia'] > 0 ? 'bg-success' : 'bg-secondary' ?>">
+                        <?= number_format($b['stok_tersedia']) ?>
+                      </span>
+                    </td>
                     <td>
                       <a href="?action=edit&id=<?= $b['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
                       <form method="POST" class="d-inline">

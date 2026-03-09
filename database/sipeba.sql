@@ -94,7 +94,7 @@ INSERT INTO `jenis_barang` (`kode_jenis`, `nama_jenis`, `kategori`) VALUES
 -- ============================================================
 CREATE TABLE `barang` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `kode_barang` VARCHAR(20) NOT NULL UNIQUE,
+  `kode_barang` VARCHAR(20) NOT NULL,
   `nama_barang` VARCHAR(150) NOT NULL,
   `satuan` VARCHAR(30) NOT NULL,
   `id_jenis_barang` INT UNSIGNED NOT NULL,
