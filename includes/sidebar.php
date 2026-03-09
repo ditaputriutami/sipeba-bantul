@@ -18,7 +18,7 @@ function isActive(string $path): string
       <span class="brand-name">SIPEBA</span>
       <span class="brand-sub">Setda Bantul</span>
     </div>
-    <button class="sidebar-toggle ms-auto d-xl-none" id="sidebarToggleBtn">
+    <button class="sidebar-toggle-btn ms-auto" id="sidebarToggleBtn">
       <i class="bi bi-x-lg"></i>
     </button>
   </div>
@@ -123,18 +123,6 @@ function isActive(string $path): string
           if ($stockOpnamePending > 0): ?>
             <span class="badge-count"><?= $stockOpnamePending ?></span>
           <?php endif; ?>
-        </a>
-      </div>
-      <div class="menu-group">
-        <span class="menu-label">Transaksi</span>
-        <a href="<?= BASE_URL ?>/transaksi/penerimaan/index.php" class="menu-item <?= isActive('/penerimaan/') ?>">
-          <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
-        </a>
-        <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
-          <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
-        </a>
-        <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
-          <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
         </a>
       </div>
     <?php endif; ?>
