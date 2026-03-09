@@ -1,13 +1,10 @@
 <?php
 
 /**
- * SIPEBA - FIFO Pengurangan Store
+ * SIPEBA - FIFO Pengurangan Update
  * 
- * Logika FIFO (First In, First Out):
- * 1. Ambil semua batch penerimaan yang DISETUJUI untuk barang ini (urut tanggal ASC)
- * 2. Potong stok dari batch paling lama sampai jumlah terpenuhi
- * 3. Simpan detail pemotongan per-batch di tabel pengurangan_detail
- * 4. Stok actual di stok_current dikurangi setelah approval kepala
+ * Update pengurangan yang masih berstatus pending.
+ * Menghapus detail lama dan membuat ulang detail FIFO yang baru.
  */
 
 require_once __DIR__ . '/../../config/bootstrap.php';
@@ -21,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $user = getCurrentUser();
 $role = getUserRole();
 
+$id                = (int)($_POST['id'] ?? 0);
 $no_permintaan     = sanitize($_POST['no_permintaan'] ?? '');
 $tanggal           = $_POST['tanggal'] ?? date('Y-m-d');
 $id_barang         = (int)($_POST['id_barang'] ?? 0);
@@ -30,7 +28,42 @@ $keterangan        = sanitize($_POST['keterangan'] ?? '');
 $id_bagian         = ($role === 'superadmin') ? (int)$_POST['id_bagian'] : (int)getUserBagian();
 $id_user           = getUserId();
 
-// ---- Validasi dasar// Validasi
+// ---- Validasi ID ----
+if (!$id) {
+    setFlash('error', 'ID pengurangan tidak valid.');
+    header('Location: index.php');
+    exit;
+}
+
+// ---- Get existing data ----
+$stmt = $conn->prepare("SELECT * FROM pengurangan WHERE id = ?");
+$stmt->bind_param('i', $id);
+$stmt->execute();
+$result = $stmt->get_result();
+$existing = $result->fetch_assoc();
+$stmt->close();
+
+if (!$existing) {
+    setFlash('error', 'Data pengurangan tidak ditemukan.');
+    header('Location: index.php');
+    exit;
+}
+
+// ---- Validasi: Hanya pending yang bisa diedit ----
+if ($existing['status'] !== 'pending') {
+    setFlash('error', 'Hanya pengurangan dengan status pending yang dapat diedit.');
+    header('Location: index.php');
+    exit;
+}
+
+// ---- Validasi ownership ----
+if ($role !== 'superadmin' && $existing['id_bagian'] != getUserBagian()) {
+    setFlash('error', 'Anda tidak memiliki akses untuk mengedit data ini.');
+    header('Location: index.php');
+    exit;
+}
+
+// ---- Validasi dasar ----
 $errors = [];
 if (!$id_barang)     $errors[] = 'Barang wajib dipilih.';
 if ($jumlah < 1)     $errors[] = 'Jumlah minimal 1.';
@@ -41,7 +74,7 @@ if (!in_array($jenis, ['penghapusan', 'mutasi_keluar'])) {
 
 if (!empty($errors)) {
     setFlash('error', implode('<br>', $errors));
-    header('Location: create.php');
+    header('Location: edit.php?id=' . $id);
     exit;
 }
 
@@ -49,12 +82,11 @@ if (!empty($errors)) {
 $stok = $conn->query("SELECT COALESCE(stok,0) FROM stok_current WHERE id_barang=$id_barang AND id_bagian=$id_bagian")->fetch_row()[0] ?? 0;
 if ($jumlah > $stok) {
     setFlash('error', "Stok tidak mencukupi. Stok tersedia: <strong>$stok</strong>.");
-    header('Location: create.php');
+    header('Location: edit.php?id=' . $id);
     exit;
 }
 
 // ---- FIFO: Cek kecukupan dari batch penerimaan ----
-// Ambil semua batch disetujui dengan sisa_stok > 0, urut dari terlama
 $batchQuery = $conn->prepare("
     SELECT id, sisa_stok, harga_satuan, tanggal
     FROM penerimaan
@@ -69,20 +101,28 @@ $batchQuery->close();
 $totalSisa = array_sum(array_column($batches, 'sisa_stok'));
 if ($jumlah > $totalSisa) {
     setFlash('error', "Jumlah melebihi stok yang tersedia di batch penerimaan ($totalSisa).");
-    header('Location: create.php');
+    header('Location: edit.php?id=' . $id);
     exit;
 }
 
 // ---- Mulai transaksi DB ----
 $conn->begin_transaction();
 try {
-    // Insert header pengurangan (status pending)
-    $stmt = $conn->prepare("
-        INSERT INTO pengurangan (no_permintaan, tanggal, id_barang, jumlah, keterangan, jenis, id_bagian, id_user, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    // Hapus detail lama
+    $deleteStmt = $conn->prepare("DELETE FROM pengurangan_detail WHERE id_pengurangan = ?");
+    $deleteStmt->bind_param('i', $id);
+    $deleteStmt->execute();
+    $deleteStmt->close();
+
+    // Update header pengurangan
+    $updateStmt = $conn->prepare("
+        UPDATE pengurangan 
+        SET no_permintaan = ?, tanggal = ?, id_barang = ?, jumlah = ?, 
+            keterangan = ?, jenis = ?, id_bagian = ?, id_user = ?
+        WHERE id = ?
     ");
-    $stmt->bind_param(
-        'ssiissii',
+    $updateStmt->bind_param(
+        'ssiissiii',
         $no_permintaan,
         $tanggal,
         $id_barang,
@@ -90,33 +130,35 @@ try {
         $keterangan,
         $jenis,
         $id_bagian,
-        $id_user
+        $id_user,
+        $id
     );
-    $stmt->execute();
-    $id_pengurangan = $conn->insert_id;
-    $stmt->close();
+    $updateStmt->execute();
+    $updateStmt->close();
 
-    // ---- FIFO: Hitung pemotongan per-batch dan simpan detail ----
+    // ---- FIFO: Hitung pemotongan per-batch dan simpan detail baru ----
     $sisaPotongan = $jumlah;
     $detailStmt = $conn->prepare("
         INSERT INTO pengurangan_detail (id_pengurangan, id_penerimaan, jumlah_dipotong, harga_satuan)
         VALUES (?, ?, ?, ?)
     ");
-    // Simpan rencana pemotongan — actual update sisa_stok dilakukan saat APPROVAL
+
     foreach ($batches as $batch) {
         if ($sisaPotongan <= 0) break;
         $dipotong = min($sisaPotongan, $batch['sisa_stok']);
-        $detailStmt->bind_param('iiid', $id_pengurangan, $batch['id'], $dipotong, $batch['harga_satuan']);
+        $detailStmt->bind_param('iiid', $id, $batch['id'], $dipotong, $batch['harga_satuan']);
         $detailStmt->execute();
         $sisaPotongan -= $dipotong;
     }
     $detailStmt->close();
 
     $conn->commit();
-    setFlash('success', "Pengurangan berhasil disimpan. Menunggu persetujuan Kepala Bagian.");
+    setFlash('success', "Pengurangan berhasil diupdate. Menunggu persetujuan Kepala Bagian.");
 } catch (Exception $e) {
     $conn->rollback();
-    setFlash('error', 'Gagal menyimpan: ' . $e->getMessage());
+    setFlash('error', 'Gagal mengupdate: ' . $e->getMessage());
+    header('Location: edit.php?id=' . $id);
+    exit;
 }
 
 header('Location: index.php');

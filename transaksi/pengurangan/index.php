@@ -11,15 +11,26 @@ $filterStatus = $_GET['status'] ?? '';
 $where = "WHERE 1=1 $filterBagian";
 if ($filterStatus) $where .= " AND p.status='".mysqli_real_escape_string($conn,$filterStatus)."'";
 
+// Query untuk mendapatkan detail batch per pengurangan
 $list = $conn->query("
-    SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver
+    SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver,
+           pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
+           pen.tanggal as batch_tanggal, pen.no_faktur as batch_no_faktur,
+           (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
+            FROM pengurangan_detail pd2 
+            WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total,
+           (SELECT COUNT(*) 
+            FROM pengurangan_detail pd3 
+            WHERE pd3.id_pengurangan = p.id) as batch_count
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     LEFT JOIN users ap ON p.id_approver=ap.id
+    LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
+    LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
     $where
-    ORDER BY p.created_at DESC
+    ORDER BY p.created_at DESC, pd.id ASC
 ");
 
 include BASE_PATH . '/includes/header.php';
@@ -64,41 +75,50 @@ include BASE_PATH . '/includes/sidebar.php';
         <table class="table" id="pengTable">
           <thead>
             <tr>
-              <th>#</th><th>No. Permintaan</th><th>Tanggal</th><th>Nama Barang</th><th>Jumlah</th>
-              <th>Penerima</th><th>Tgl Penyerahan</th>
-              <?php if($role==='superadmin'): ?><th>Bagian</th><?php endif; ?>
-              <th>Status</th><th>Aksi</th>
+              <th>#</th>
+              <th>No. Permintaan</th>
+              <th>Tanggal</th>
+              <th>Nama Barang</th>
+              <th>Jumlah</th>
+              <th>Penerima</th>
+              <th>Tgl Penyerahan</th>
+              <?php if ($role === 'superadmin'): ?><th>Bagian</th><?php endif; ?>
+              <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            <?php $no=1; while($p=$list->fetch_assoc()): ?>
-            <tr>
-              <td><?=$no++?></td>
-              <td><code><?=htmlspecialchars($p['no_permintaan'])?></code></td>
-              <td><?=formatTanggal($p['tanggal'])?></td>
-              <td><?=htmlspecialchars($p['nama_barang'])?></td>
-              <td><?=number_format($p['jumlah'])?> <?=htmlspecialchars($p['satuan'])?></td>
-              <td><?=htmlspecialchars($p['penerima']??'—')?></td>
-              <td><?=$p['tanggal_penyerahan']?formatTanggal($p['tanggal_penyerahan']):'—'?></td>
-              <?php if($role==='superadmin'): ?><td><?=htmlspecialchars($p['nama_bagian'])?></td><?php endif; ?>
-              <td>
-                <?php
-                $sc=['pending'=>'badge-pending','disetujui'=>'badge-approved','ditolak'=>'badge-rejected'];
-                $si=['pending'=>'bi-clock','disetujui'=>'bi-check-circle','ditolak'=>'bi-x-circle'];
-                ?>
-                <span class="badge-sipeba <?=$sc[$p['status']]??''?>">
-                  <i class="bi <?=$si[$p['status']]??''?>"></i> <?=ucfirst($p['status'])?>
-                </span>
-              </td>
-              <td>
-                <?php if($p['status']==='pending'&&in_array($role,['pengurus','kepala'])): ?>
-                  <form method="POST" action="delete.php" class="d-inline">
-                    <input type="hidden" name="id" value="<?=$p['id']?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
-                  </form>
-                <?php endif; ?>
-              </td>
-            </tr>
+            <?php $no = 1;
+            while ($p = $list->fetch_assoc()): ?>
+              <tr>
+                <td><?= $no++ ?></td>
+                <td><code><?= htmlspecialchars($p['no_permintaan']) ?></code></td>
+                <td><?= formatTanggal($p['tanggal']) ?></td>
+                <td><?= htmlspecialchars($p['nama_barang']) ?></td>
+                <td><?= number_format($p['jumlah']) ?> <?= htmlspecialchars($p['satuan']) ?></td>
+                <td><?= htmlspecialchars($p['penerima'] ?? '—') ?></td>
+                <td><?= $p['tanggal_penyerahan'] ? formatTanggal($p['tanggal_penyerahan']) : '—' ?></td>
+                <?php if ($role === 'superadmin'): ?><td><?= htmlspecialchars($p['nama_bagian']) ?></td><?php endif; ?>
+                <td>
+                  <?php
+                  $sc = ['pending' => 'badge-pending', 'disetujui' => 'badge-approved', 'ditolak' => 'badge-rejected'];
+                  $si = ['pending' => 'bi-clock', 'disetujui' => 'bi-check-circle', 'ditolak' => 'bi-x-circle'];
+                  ?>
+                  <span class="badge-sipeba <?= $sc[$p['status']] ?? '' ?>">
+                    <i class="bi <?= $si[$p['status']] ?? '' ?>"></i> <?= ucfirst($p['status']) ?>
+                  </span>
+                </td>
+                <td>
+                  <?php if ($p['status'] === 'pending' && in_array($role, ['pengurus', 'kepala'])): ?>
+                    <form method="POST" action="delete.php" class="d-inline">
+                      <input type="hidden" name="id" value="<?= $p['id'] ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
+                    </form>
+                  <?php else: ?>
+                    <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui atau ditolak"><i class="bi bi-lock"></i></span>
+                  <?php endif; ?>
+                </td>
+              </tr>
             <?php endwhile; ?>
           </tbody>
         </table>
