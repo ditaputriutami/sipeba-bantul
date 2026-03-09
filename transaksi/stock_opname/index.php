@@ -22,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($id_edit > 0) {
     // Cek status sebelum update
     $currentData = $conn->query("SELECT status FROM stock_opname WHERE id=$id_edit")->fetch_assoc();
-    if ($currentData && $currentData['status'] === 'disetujui') {
-      setFlash('error', 'Stock Opname yang sudah disetujui tidak dapat diedit.');
+    if ($currentData && $currentData['status'] !== 'pending') {
+      setFlash('error', 'Hanya Stock Opname dengan status pending yang dapat diedit.');
       header('Location: index.php');
       exit;
     }
@@ -50,8 +50,8 @@ if (isset($_GET['edit'])) {
   $editData = $conn->query("SELECT * FROM stock_opname WHERE id=$id_edit")->fetch_assoc();
   if (!$editData) {
     setFlash('error', 'Data tidak ditemukan.');
-  } elseif ($editData['status'] === 'disetujui') {
-    setFlash('error', 'Stock Opname yang sudah disetujui tidak dapat diedit.');
+  } elseif ($editData['status'] !== 'pending') {
+    setFlash('error', 'Hanya Stock Opname dengan status pending yang dapat diedit.');
     $editData = null;
   }
 }
@@ -232,6 +232,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th class="text-center">Selisih</th>
               <th>Keterangan</th>
               <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -256,6 +257,17 @@ include BASE_PATH . '/includes/sidebar.php';
                   <span class="badge-sipeba <?= $sc[$s['status']] ?? '' ?>">
                     <i class="bi <?= $si[$s['status']] ?? '' ?>"></i> <?= ucfirst($s['status']) ?>
                   </span>
+                </td>
+                <td>
+                  <?php if ($s['status'] === 'pending' && in_array($role, ['pengurus', 'kepala', 'superadmin'])): ?>
+                    <a href="index.php?edit=<?= $s['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon me-1" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <form method="POST" action="delete.php" class="d-inline">
+                      <input type="hidden" name="id" value="<?= $s['id'] ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus Stock Opname ini?" title="Hapus"><i class="bi bi-trash"></i></button>
+                    </form>
+                  <?php else: ?>
+                    <span class="text-muted" title="Tidak dapat diedit/dihapus karena status bukan pending"><i class="bi bi-lock"></i></span>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endwhile; ?>

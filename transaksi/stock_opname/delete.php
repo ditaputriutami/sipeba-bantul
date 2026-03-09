@@ -9,9 +9,9 @@ $id_bagian = getUserBagian();
 if ($id) {
     $tx = $conn->query("SELECT id, id_bagian, status FROM stock_opname WHERE id=$id")->fetch_assoc();
     if ($tx) {
-        // Cek apakah sudah disetujui
-        if ($tx['status'] === 'disetujui') {
-            setFlash('error', 'Stock Opname yang sudah disetujui tidak dapat dihapus.');
+        // Hanya data pending yang dapat dihapus
+        if ($tx['status'] !== 'pending') {
+            setFlash('error', 'Hanya Stock Opname dengan status pending yang dapat dihapus.');
         }
         // Access control
         elseif ($role === 'superadmin' || $tx['id_bagian'] == $id_bagian) {
