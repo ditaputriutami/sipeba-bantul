@@ -150,7 +150,7 @@ $pengPending = $conn->query("
     SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.status as parent_status,
        p.keterangan, j.nama_jenis,
        b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user,
-           pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
+       pd.id as detail_id, pd.status as batch_status, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
            pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal,
            (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
             FROM pengurangan_detail pd2 
@@ -376,12 +376,20 @@ include BASE_PATH . '/includes/sidebar.php';
 
                 <!-- Aksi per batch -->
                 <td class="text-center">
-                  <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
-                    <i class="bi bi-check-lg"></i>
-                  </button>
-                  <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
+                  <?php if (($p['batch_status'] ?? 'pending') === 'pending'): ?>
+                    <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  <?php elseif (($p['batch_status'] ?? '') === 'disetujui'): ?>
+                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Disetujui</span>
+                  <?php elseif (($p['batch_status'] ?? '') === 'ditolak'): ?>
+                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Ditolak</span>
+                  <?php else: ?>
+                    <span class="badge bg-secondary">-</span>
+                  <?php endif; ?>
                 </td>
               </tr>
               <?php
