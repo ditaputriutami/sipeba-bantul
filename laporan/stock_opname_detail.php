@@ -37,8 +37,9 @@ $f_sampai_tanggal = $_GET['sampai_tanggal'] ?? '';
 $role = getUserRole();
 $user_bagian = getUserBagian();
 $user = getCurrentUser();
-if ($role !== 'superadmin' && $f_bagian !== $user_bagian) {
-  $f_bagian = $user_bagian;
+if ($role !== 'superadmin') {
+  // Sekretariat Daerah (id=9) dapat melihat seluruh bagian.
+  $f_bagian = ((int)$user_bagian === 9) ? 0 : (int)$user_bagian;
 }
 
 $jenis = $id_jenis ? $conn->query("SELECT * FROM jenis_barang WHERE id=$id_jenis")->fetch_assoc() : null;
@@ -57,18 +58,34 @@ if ($use_date_filter) {
 
 $where_bagian = $f_bagian ? " AND id_bagian=$f_bagian" : "";
 $where_bagian_so = $f_bagian ? " AND so.id_bagian=$f_bagian" : "";
-$where_bagian_sc = $f_bagian ? " AND sc.id_bagian=$f_bagian" : "";
+$where_bagian_p = $f_bagian ? " AND p.id_bagian=$f_bagian" : "";
+$where_bagian_p2 = $f_bagian ? " AND p2.id_bagian=$f_bagian" : "";
+$where_bagian_pr = $f_bagian ? " AND pr.id_bagian=$f_bagian" : "";
 $where_jenis = $id_jenis ? " AND b.id_jenis_barang = $id_jenis" : "";
 
-// Ambil tahun-tahun yang ada datanya (dari penerimaan dan pengurangan)
+$kondisi_penerimaan_sampai = $use_date_filter
+  ? "p.tanggal <= '$f_sampai_tanggal'"
+  : "YEAR(p.tanggal) <= $f_tahun";
+
+$kondisi_pengurangan_sampai = $use_date_filter
+  ? "pr.tanggal <= '$f_sampai_tanggal'"
+  : "YEAR(pr.tanggal) <= $f_tahun";
+
+$kondisi_harga_terakhir = $use_date_filter
+  ? "p2.tanggal <= '$f_sampai_tanggal'"
+  : "YEAR(p2.tanggal) <= $f_tahun";
+
+// Ambil tahun-tahun yang ada datanya
 $years_query = "
-    SELECT DISTINCT tahun FROM (
-        SELECT YEAR(tanggal) as tahun FROM penerimaan WHERE status = 'disetujui' $where_bagian
-        UNION
-        SELECT YEAR(tanggal) as tahun FROM pengurangan WHERE status = 'disetujui' $where_bagian
-    ) AS all_years
-    WHERE tahun IS NOT NULL
-    ORDER BY tahun DESC
+  SELECT DISTINCT tahun FROM (
+    SELECT YEAR(tanggal) as tahun FROM penerimaan WHERE status = 'disetujui' $where_bagian
+    UNION
+    SELECT YEAR(tanggal) as tahun FROM pengurangan WHERE status IN ('disetujui','disetujui sebagian') $where_bagian
+    UNION
+    SELECT YEAR(tanggal) as tahun FROM stock_opname WHERE status = 'disetujui' $where_bagian
+  ) AS all_years
+  WHERE tahun IS NOT NULL
+  ORDER BY tahun DESC
 ";
 $years_result = $conn->query($years_query);
 $years = [];
@@ -83,18 +100,15 @@ if (!in_array($f_tahun, $years)) {
 }
 
 // Nama bagian untuk display
-$nama_bagian_display = 'SEMUA BAGIAN';
+$nama_bagian_display = 'SEKRETARIAT DAERAH';
 if ($f_bagian) {
-  $nama_bagian_display = $bagian ? strtoupper(htmlspecialchars($bagian['nama'])) : '';
+  $nama_bagian_display = $bagian ? strtoupper(trim(preg_replace('/^Bagian\s+/i', '', $bagian['nama']))) : '';
 } elseif ($user_bagian == 9) {
-  $nama_bagian_display = 'SEKRETARIAT DAERAH KABUPATEN BANTUL';
+  $nama_bagian_display = 'SEKRETARIAT DAERAH';
 }
 
-// Query Detail: Menghitung saldo akhir per barang berdasarkan periode
-// Menampilkan breakdown detail dari summary stock opname
-if ($use_date_filter) {
-  // Filter berdasarkan range tanggal
-  $query = "
+// Query Detail: Ambil posisi stok per barang dari transaksi disetujui sampai akhir periode
+$query = "
     SELECT 
         b.id as id_barang,
         b.kode_barang,
@@ -102,71 +116,52 @@ if ($use_date_filter) {
         b.satuan,
         j.nama_jenis,
         j.kode_jenis,
-        -- Hitung saldo akhir: (penerimaan sampai akhir periode) - (pengurangan sampai akhir periode)
         (
             COALESCE((
                 SELECT SUM(p.jumlah)
                 FROM penerimaan p
-                WHERE p.id_barang = b.id 
-                  AND p.status = 'disetujui' 
-                  AND p.tanggal <= '$f_sampai_tanggal'
-                  $where_bagian
-            ), 0) -
+                WHERE p.id_barang = b.id
+                  AND p.status = 'disetujui'
+                  AND $kondisi_penerimaan_sampai
+                  $where_bagian_p
+            ), 0)
+            -
             COALESCE((
-                SELECT SUM(pr.jumlah)
-                FROM pengurangan pr
-                WHERE pr.id_barang = b.id 
-                  AND pr.status IN ('disetujui', 'disetujui sebagian')
-                  AND pr.tanggal <= '$f_sampai_tanggal'
-                  $where_bagian
+                SELECT SUM(pd.jumlah_dipotong)
+                FROM pengurangan_detail pd
+                JOIN pengurangan pr ON pd.id_pengurangan = pr.id
+                WHERE pr.id_barang = b.id
+                  AND pr.status IN ('disetujui','disetujui sebagian')
+                  AND $kondisi_pengurangan_sampai
+                  $where_bagian_pr
             ), 0)
         ) as jumlah,
-        COALESCE((SELECT harga_satuan FROM penerimaan WHERE id_barang = b.id AND status = 'disetujui' ORDER BY tanggal DESC, id DESC LIMIT 1), 0) as harga_satuan,
-        '-' as keterangan
-    FROM barang b
-    JOIN jenis_barang j ON b.id_jenis_barang = j.id
-    WHERE 1=1 $where_jenis
-    HAVING jumlah > 0
-    ORDER BY j.kode_jenis ASC, b.nama_barang ASC
-  ";
-} else {
-  // Filter berdasarkan tahun
-  $query = "
-    SELECT 
-        b.id as id_barang,
-        b.kode_barang,
-        b.nama_barang,
-        b.satuan,
-        j.nama_jenis,
-        j.kode_jenis,
-        -- Hitung saldo akhir: (penerimaan sampai akhir tahun) - (pengurangan sampai akhir tahun)
+        COALESCE((
+            SELECT p2.harga_satuan
+            FROM penerimaan p2
+            WHERE p2.id_barang = b.id
+              AND p2.status = 'disetujui'
+              AND $kondisi_harga_terakhir
+              $where_bagian_p2
+            ORDER BY p2.tanggal DESC, p2.id DESC
+            LIMIT 1
+        ), 0) as harga_satuan,
         (
-            COALESCE((
-                SELECT SUM(p.jumlah)
-                FROM penerimaan p
-                WHERE p.id_barang = b.id 
-                  AND p.status = 'disetujui' 
-                  AND YEAR(p.tanggal) <= $f_tahun
-                  $where_bagian
-            ), 0) -
-            COALESCE((
-                SELECT SUM(pr.jumlah)
-                FROM pengurangan pr
-                WHERE pr.id_barang = b.id 
-                  AND pr.status IN ('disetujui', 'disetujui sebagian')
-                  AND YEAR(pr.tanggal) <= $f_tahun
-                  $where_bagian
-            ), 0)
-        ) as jumlah,
-        COALESCE((SELECT harga_satuan FROM penerimaan WHERE id_barang = b.id AND status = 'disetujui' ORDER BY tanggal DESC, id DESC LIMIT 1), 0) as harga_satuan,
-        '-' as keterangan
+            SELECT GROUP_CONCAT(DISTINCT COALESCE(so.keterangan, '-') SEPARATOR '; ')
+            FROM stock_opname so
+            WHERE so.id_barang = b.id
+              AND so.status = 'disetujui'
+              $where_tanggal
+              $where_bagian_so
+        ) as keterangan
     FROM barang b
     JOIN jenis_barang j ON b.id_jenis_barang = j.id
-    WHERE 1=1 $where_jenis
+    WHERE 1=1
+        $where_jenis
+    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis
     HAVING jumlah > 0
     ORDER BY j.kode_jenis ASC, b.nama_barang ASC
-  ";
-}
+";
 
 $data = $conn->query($query);
 
@@ -329,12 +324,14 @@ include BASE_PATH . '/includes/sidebar.php';
             <div class="col-md-3">
               <label class="form-label mb-1 small fw-semibold">Bagian</label>
               <select name="id_bagian" class="form-select form-select-sm">
-                <option value="0" <?= $f_bagian == 0 ? 'selected' : '' ?>>Semua Bagian</option>
+                <option value="0" <?= $f_bagian == 0 ? 'selected' : '' ?>>Sekretariat Daerah</option>
                 <?php
                 $bagianList = $conn->query("SELECT * FROM bagian ORDER BY nama");
                 while ($bg = $bagianList->fetch_assoc()):
+                  if ((int)$bg['id'] === 9) continue;
+                  $namaBagianOption = htmlspecialchars($bg['nama']);
                 ?>
-                  <option value="<?= $bg['id'] ?>" <?= $f_bagian == $bg['id'] ? 'selected' : '' ?>><?= htmlspecialchars($bg['nama']) ?></option>
+                  <option value="<?= $bg['id'] ?>" <?= $f_bagian == $bg['id'] ? 'selected' : '' ?>><?= $namaBagianOption ?></option>
                 <?php endwhile; ?>
               </select>
             </div>

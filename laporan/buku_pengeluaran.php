@@ -18,7 +18,7 @@ if ($id_bagian == 9) $f_bagian = 0;
 $f_dari    = $_GET['dari'] ?? date('Y-m-01');
 $f_sampai  = $_GET['sampai'] ?? date('Y-m-d');
 
-$where = "WHERE p.status IN ('disetujui','disetujui sebagian')";
+$where = "WHERE p.status IN ('disetujui','disetujui sebagian') AND pd.status='disetujui'";
 if ($f_bagian) $where .= " AND p.id_bagian=$f_bagian";
 if ($f_dari)   $where .= " AND p.tanggal >= '$f_dari'";
 if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
@@ -44,6 +44,24 @@ $data = $conn->query("
 
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
+// Nama bagian yang ditampilkan pada header laporan
+$namaBagianLaporan = 'Sekretariat Daerah';
+if ($f_bagian > 0) {
+  if ($role !== 'superadmin' && !empty($user['nama_bagian']) && (int)$id_bagian === (int)$f_bagian) {
+    $namaBagianLaporan = $user['nama_bagian'];
+  } else {
+    $qBagian = $conn->query("SELECT nama FROM bagian WHERE id=" . (int)$f_bagian . " LIMIT 1");
+    if ($qBagian && $qBagian->num_rows > 0) {
+      $namaBagianLaporan = $qBagian->fetch_assoc()['nama'];
+    }
+  }
+}
+
+// Hindari duplikasi "Bagian Bagian ..."
+$labelBagianLaporan = preg_match('/^Bagian\s+/i', (string)$namaBagianLaporan)
+  ? $namaBagianLaporan
+  : 'Bagian ' . $namaBagianLaporan;
+
 // Export Excel
 if (isset($_GET['export'])) {
   header('Content-Type: application/vnd.ms-excel; charset=utf-8');
@@ -67,6 +85,9 @@ if (isset($_GET['export'])) {
       </tr>
       <tr>
         <th colspan="11" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
+      </tr>
+      <tr>
+        <th colspan="11" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
       </tr>
       <tr>
         <th colspan="11" style="border:none;"></th>
@@ -188,6 +209,7 @@ include BASE_PATH . '/includes/sidebar.php';
       <div class="card-header text-center">
         <div class="fw-bold">BUKU PENGELUARAN BARANG PERSEDIAAN</div>
         <div class="text-muted" style="font-size:.85rem">Periode: <?= formatTanggal($f_dari) ?> s.d. <?= formatTanggal($f_sampai) ?></div>
+        <div class="fw-semibold" style="font-size:1rem"><?= htmlspecialchars($labelBagianLaporan) ?></div>
       </div>
       <div class="table-wrapper">
         <table class="table table-bordered table-sm align-middle" style="font-size:.82rem; white-space:nowrap;">
