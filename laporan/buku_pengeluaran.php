@@ -18,25 +18,28 @@ if ($id_bagian == 9) $f_bagian = 0;
 $f_dari    = $_GET['dari'] ?? date('Y-m-01');
 $f_sampai  = $_GET['sampai'] ?? date('Y-m-d');
 
-$where = "WHERE p.status='disetujui'";
+$where = "WHERE p.status IN ('disetujui','disetujui sebagian') AND pd.status='disetujui'";
 if ($f_bagian) $where .= " AND p.id_bagian=$f_bagian";
 if ($f_dari)   $where .= " AND p.tanggal >= '$f_dari'";
 if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
 
-// Join dengan detail FIFO untuk tahu harga (ambil rata-rata tertimbang jika multi-batch)
+// Join dengan detail FIFO untuk breakdown per batch
 $data = $conn->query("
-    SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.keterangan,
+    SELECT p.id, p.no_permintaan, p.tanggal, p.keterangan,
            b.kode_barang, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_input,
            j.nama_jenis, j.kode_jenis,
-           COALESCE((SELECT SUM(pd.jumlah_dipotong * pd.harga_satuan) / SUM(pd.jumlah_dipotong) FROM pengurangan_detail pd WHERE pd.id_pengurangan=p.id), 0) as harga_rata_rata,
-           COALESCE((SELECT SUM(pd.jumlah_dipotong * pd.harga_satuan) FROM pengurangan_detail pd WHERE pd.id_pengurangan=p.id), 0) as total_nilai
+           pd.jumlah_dipotong, pd.harga_satuan,
+           (pd.jumlah_dipotong * pd.harga_satuan) as total_nilai_batch,
+           pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal
     FROM pengurangan p
+    JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
+    JOIN penerimaan pen ON pen.id = pd.id_penerimaan
     JOIN barang b ON p.id_barang=b.id
     JOIN jenis_barang j ON b.id_jenis_barang=j.id
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where
-    ORDER BY j.id ASC, b.id ASC, p.tanggal ASC, p.id ASC
+    ORDER BY p.tanggal ASC, p.id ASC, pd.id ASC
 ");
 
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
@@ -92,8 +95,8 @@ if (isset($_GET['export'])) {
       $totalNilai = 0;
       $totalQty = 0;
       foreach ($exportData as $r) {
-        $totalNilai += $r['total_nilai'];
-        $totalQty += $r['jumlah'];
+        $totalNilai += $r['total_nilai_batch'];
+        $totalQty += $r['jumlah_dipotong'];
         if ($current_jenis !== $r['kode_jenis']) {
           $current_jenis = $r['kode_jenis'];
       ?>
@@ -113,10 +116,10 @@ if (isset($_GET['export'])) {
           <td><?= htmlspecialchars($r['nama_barang']) ?></td>
           <td style="mso-number-format:'\@'; text-align:center;"><?= htmlspecialchars($r['kode_barang']) ?></td>
           <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
-          <td style="text-align:center;"><?= number_format($r['jumlah'], 0, '', '') ?></td>
+          <td style="text-align:center;"><?= number_format($r['jumlah_dipotong'], 0, '', '') ?></td>
           <td><?= htmlspecialchars($r['satuan']) ?></td>
-          <td style="text-align:right;"><?= number_format($r['harga_rata_rata'], 0, '', '') ?></td>
-          <td style="text-align:right;"><?= number_format($r['total_nilai'], 0, '', '') ?></td>
+          <td style="text-align:right;"><?= number_format($r['harga_satuan'], 0, '', '') ?></td>
+          <td style="text-align:right;"><?= number_format($r['total_nilai_batch'], 0, '', '') ?></td>
           <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
         </tr>
       <?php } ?>
@@ -221,8 +224,8 @@ include BASE_PATH . '/includes/sidebar.php';
             $jenis_no = 1;
             foreach ($htmlData as $r):
               $found = true;
-              $totalNilai += $r['total_nilai'];
-              $totalQty += $r['jumlah'];
+              $totalNilai += $r['total_nilai_batch'];
+              $totalQty += $r['jumlah_dipotong'];
 
               if ($current_jenis !== $r['kode_jenis']):
                 $current_jenis = $r['kode_jenis'];
@@ -243,10 +246,10 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td><?= htmlspecialchars($r['nama_barang']) ?></td>
                 <td class="text-center"><?= htmlspecialchars($r['kode_barang']) ?></td>
                 <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
-                <td class="text-center"><?= number_format($r['jumlah']) ?></td>
+                <td class="text-center"><?= number_format($r['jumlah_dipotong']) ?></td>
                 <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
-                <td class="text-end"><?= formatRupiah($r['harga_rata_rata']) ?></td>
-                <td class="text-end fw-semibold"><?= formatRupiah($r['total_nilai']) ?></td>
+                <td class="text-end"><?= formatRupiah($r['harga_satuan']) ?></td>
+                <td class="text-end fw-semibold"><?= formatRupiah($r['total_nilai_batch']) ?></td>
                 <td><?= htmlspecialchars($r['keterangan'] ?? '—') ?></td>
               </tr>
             <?php endforeach;

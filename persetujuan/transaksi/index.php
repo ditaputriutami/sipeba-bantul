@@ -17,8 +17,9 @@ $id_bagian = getUserBagian();
 
 // ---- Handle Approval/Reject ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
-  $jenis    = $_POST['jenis'] ?? '';  // 'penerimaan' or 'pengurangan'
+  $jenis    = $_POST['jenis'] ?? '';  // 'penerimaan' or 'pengurangan' or 'pengurangan_batch'
   $tx_id    = (int)($_POST['tx_id'] ?? 0);
+  $detail_id= (int)($_POST['detail_id'] ?? 0); // For batch-level approval
   $action   = $_POST['action_type']; // 'setujui' or 'tolak'
   $catatan  = sanitize($_POST['catatan_approval'] ?? '');
   $now      = date('Y-m-d H:i:s');
@@ -46,29 +47,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
       } else { // tolak
         $conn->query("UPDATE penerimaan SET status='ditolak', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "', sisa_stok=0 WHERE id=$tx_id");
       }
+    } elseif ($jenis === 'pengurangan_batch') {
+      // BATCH-LEVEL APPROVAL
+      $detail = $conn->query("SELECT pd.*, p.id_barang, p.id_bagian FROM pengurangan_detail pd JOIN pengurangan p ON p.id=pd.id_pengurangan WHERE pd.id=$detail_id AND pd.status='pending'")->fetch_assoc();
+      if (!$detail) throw new Exception('Batch tidak ditemukan atau sudah diproses.');
+
+      if ($action === 'setujui') {
+        // Update batch status
+        $conn->query("UPDATE pengurangan_detail SET status='disetujui', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "' WHERE id=$detail_id");
+        
+        // Update sisa_stok penerimaan untuk batch ini
+        $conn->query("UPDATE penerimaan SET sisa_stok = sisa_stok - {$detail['jumlah_dipotong']} WHERE id={$detail['id_penerimaan']}");
+        
+        // Update stok_current (kurangi)
+        $stmt = $conn->prepare("UPDATE stok_current SET stok = stok - ? WHERE id_barang=? AND id_bagian=?");
+        $stmt->bind_param('iii', $detail['jumlah_dipotong'], $detail['id_barang'], $detail['id_bagian']);
+        $stmt->execute();
+        $stmt->close();
+      } else {
+        // Tolak batch ini
+        $conn->query("UPDATE pengurangan_detail SET status='ditolak', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "' WHERE id=$detail_id");
+      }
+
+      // Check if all batches are processed (approved or rejected)
+      $checkAll = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']}")->fetch_assoc();
+      
+      if ($checkAll['pending'] == 0) {
+        // All batches processed, update parent transaction
+        $approvedBatches = $conn->query("SELECT SUM(jumlah_dipotong) as total FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']} AND status='disetujui'")->fetch_row()[0];
+        
+        if ($approvedBatches > 0) {
+          // At least some batches approved
+          $allApproved = $conn->query("SELECT COUNT(*) FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']} AND status='ditolak'")->fetch_row()[0];
+          $finalStatus = ($allApproved > 0) ? 'disetujui sebagian' : 'disetujui';
+          $conn->query("UPDATE pengurangan SET status='$finalStatus', id_approver=$approver, approved_at='$now' WHERE id={$detail['id_pengurangan']}");
+        } else {
+          // All rejected
+          $conn->query("UPDATE pengurangan SET status='ditolak', id_approver=$approver, approved_at='$now' WHERE id={$detail['id_pengurangan']}");
+        }
+      }
     } elseif ($jenis === 'pengurangan') {
+      // FULL TRANSACTION APPROVAL (kept for compatibility)
       $tx = $conn->query("SELECT * FROM pengurangan WHERE id=$tx_id AND status='pending'")->fetch_assoc();
       if (!$tx) throw new Exception('Transaksi tidak ditemukan atau sudah diproses.');
 
       if ($action === 'setujui') {
-        // Ambil detail FIFO
+        // Approve all batches at once
         $details = $conn->query("SELECT * FROM pengurangan_detail WHERE id_pengurangan=$tx_id")->fetch_all(MYSQLI_ASSOC);
 
-        // Update sisa_stok per batch penerimaan
         foreach ($details as $d) {
+          $conn->query("UPDATE pengurangan_detail SET status='disetujui', id_approver=$approver, approved_at='$now' WHERE id={$d['id']}");
           $conn->query("UPDATE penerimaan SET sisa_stok = sisa_stok - {$d['jumlah_dipotong']} WHERE id={$d['id_penerimaan']}");
         }
 
-        // Update stok_current (kurangi)
         $stmt = $conn->prepare("UPDATE stok_current SET stok = stok - ? WHERE id_barang=? AND id_bagian=?");
         $stmt->bind_param('iii', $tx['jumlah'], $tx['id_barang'], $tx['id_bagian']);
         $stmt->execute();
         $stmt->close();
 
         $conn->query("UPDATE pengurangan SET status='disetujui', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "' WHERE id=$tx_id");
-      } else { // tolak
-        // Hapus detail FIFO (tidak jadi dipakai)
-        $conn->query("DELETE FROM pengurangan_detail WHERE id_pengurangan=$tx_id");
+      } else {
+        $conn->query("UPDATE pengurangan_detail SET status='ditolak', id_approver=$approver, approved_at='$now' WHERE id_pengurangan=$tx_id");
         $conn->query("UPDATE pengurangan SET status='ditolak', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "' WHERE id=$tx_id");
       }
     }
@@ -102,23 +141,26 @@ while ($row = $penPending->fetch_assoc()) {
 }
 $jumlahPenPending = count($penPendingArray);
 
-// Query pengurangan dengan detail batch
+// Query pengurangan dengan detail batch - show transactions with any pending batches
 $pengPending = $conn->query("
-    SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah,
+    SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.status as parent_status,
            b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user,
            pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
+           pd.status as batch_status,
+           pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal,
            (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
             FROM pengurangan_detail pd2 
             WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total,
            (SELECT COUNT(*) 
             FROM pengurangan_detail pd3 
-            WHERE pd3.id_pengurangan = p.id) as batch_count
+            WHERE pd3.id_pengurangan = p.id AND pd3.status='pending') as batch_pending_count
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id 
     JOIN bagian bg ON p.id_bagian=bg.id 
     JOIN users u ON p.id_user=u.id
     LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
-    WHERE p.status='pending' $bagianFilter 
+    LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
+    WHERE (p.status='pending' OR p.status='disetujui sebagian') $bagianFilter 
     ORDER BY p.created_at, pd.id ASC
 ");
 
@@ -131,11 +173,22 @@ while ($row = $pengPending->fetch_assoc()) {
   }
   $pengPendingArray[] = $row;
 }
-$jumlahPengPending = count($pengPendingArray);
+$jumlahPengPending = count($seenIds);
 
 include BASE_PATH . '/includes/header.php';
 include BASE_PATH . '/includes/sidebar.php';
 ?>
+<style>
+  .batch-row {
+    background-color: #f8f9fa;
+  }
+  .batch-row:hover {
+    background-color: #e9ecef !important;
+  }
+  .table tbody tr.batch-row td {
+    border-top: 2px solid #dee2e6;
+  }
+</style>
 <div class="main-content">
   <div class="topbar">
     <button class="sidebar-toggle-btn me-3" id="mainSidebarToggle"><i class="bi bi-list fs-4"></i></button>
@@ -216,9 +269,11 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>No.Permintaan</th>
               <th>Tanggal</th>
               <th>Barang</th>
+              <th>Batch Info</th>
               <th>Jumlah</th>
               <th>Harga Satuan</th>
-              <th>Jumlah Harga</th>
+              <th>Subtotal</th>
+              <th>Total Harga</th>
               <th>Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -232,7 +287,9 @@ include BASE_PATH . '/includes/sidebar.php';
             // Hitung rowspan untuk setiap pengurangan
             foreach ($pengPendingArray as $row) {
               if (!isset($rowspanData[$row['id']])) {
-                $rowspanData[$row['id']] = $row['batch_count'] ?? 1;
+                // Count all batches (including non-pending for display)
+                $allBatchCount = $conn->query("SELECT COUNT(*) FROM pengurangan_detail WHERE id_pengurangan={$row['id']}")->fetch_row()[0];
+                $rowspanData[$row['id']] = $allBatchCount;
               }
             }
 
@@ -247,31 +304,75 @@ include BASE_PATH . '/includes/sidebar.php';
               if ($isFirstRow) {
                 $batchNo[$p['id']] = 1;
               }
+              
+              $subtotal = ($p['jumlah_dipotong'] ?? 0) * ($p['batch_harga_satuan'] ?? 0);
             ?>
-              <tr>
+              <tr <?= $rowspan > 1 ? 'class="batch-row"' : '' ?>>
                 <?php if ($isFirstRow): ?>
                   <td rowspan="<?= $rowspan ?>"><?= $no++ ?></td>
-                  <td rowspan="<?= $rowspan ?>"><code><?= htmlspecialchars($p['no_permintaan']) ?></code></td>
-                  <td rowspan="<?= $rowspan ?>"><?= formatTanggal($p['tanggal']) ?></td>
-                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_barang']) ?></td>
-                <?php endif; ?>
-
-                <!-- Jumlah & Harga Satuan per batch -->
-                <td><?= number_format($p['jumlah_dipotong'] ?? $p['jumlah']) ?> <?= $p['satuan'] ?>
-                  <?php if ($rowspan > 1): ?>
-                    <small class="text-muted">(Batch <?= $batchNo[$p['id']] ?>)</small>
-                  <?php endif; ?>
-                </td>
-                <td class="text-end"><?= formatRupiah($p['batch_harga_satuan'] ?? 0) ?></td>
-
-                <?php if ($isFirstRow): ?>
-                  <td class="text-end" rowspan="<?= $rowspan ?>"><strong><?= formatRupiah($p['jumlah_harga_total']) ?></strong></td>
-                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_user']) ?></td>
                   <td rowspan="<?= $rowspan ?>">
-                    <button class="btn btn-sm btn-success" onclick="openModal('pengurangan',<?= $p['id'] ?>,'setujui')"><i class="bi bi-check-lg"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="openModal('pengurangan',<?= $p['id'] ?>,'tolak')"><i class="bi bi-x-lg"></i></button>
+                    <code><?= htmlspecialchars($p['no_permintaan']) ?></code>
+                    <?php if ($p['parent_status'] === 'disetujui sebagian'): ?>
+                      <br><span class="badge bg-warning text-dark mt-1"><i class="bi bi-hourglass-split"></i> Sebagian</span>
+                    <?php endif; ?>
+                  </td>
+                  <td rowspan="<?= $rowspan ?>"><?= formatTanggal($p['tanggal']) ?></td>
+                  <td rowspan="<?= $rowspan ?>">
+                    <strong><?= htmlspecialchars($p['nama_barang']) ?></strong><br>
+                    <small class="text-muted">Total: <?= number_format($p['jumlah']) ?> <?= $p['satuan'] ?></small>
                   </td>
                 <?php endif; ?>
+
+                <!-- Batch Info -->
+                <td>
+                  <?php if ($rowspan > 1): ?>
+                    <span class="badge bg-primary">Batch #<?= $batchNo[$p['id']] ?></span><br>
+                  <?php else: ?>
+                    <span class="badge bg-secondary">Batch Tunggal</span><br>
+                  <?php endif; ?>
+                  <small class="text-muted">
+                    <?= htmlspecialchars($p['batch_no_faktur'] ?? '-') ?><br>
+                    <?= $p['batch_tanggal'] ? formatTanggal($p['batch_tanggal']) : '-' ?>
+                  </small>
+                </td>
+
+                <!-- Jumlah per batch -->
+                <td class="text-end">
+                  <strong><?= number_format($p['jumlah_dipotong'] ?? $p['jumlah']) ?></strong> <?= $p['satuan'] ?>
+                </td>
+                
+                <!-- Harga Satuan per batch -->
+                <td class="text-end">
+                  <strong><?= formatRupiah($p['batch_harga_satuan'] ?? 0) ?></strong>
+                </td>
+                
+                <!-- Subtotal per batch -->
+                <td class="text-end">
+                  <?= formatRupiah($subtotal) ?>
+                </td>
+
+                <?php if ($isFirstRow): ?>
+                  <td class="text-end" rowspan="<?= $rowspan ?>">
+                    <strong class="text-primary fs-6"><?= formatRupiah($p['jumlah_harga_total']) ?></strong>
+                  </td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_user']) ?></td>
+                <?php endif; ?>
+                
+                <!-- Aksi per batch -->
+                <td class="text-center">
+                  <?php if ($p['batch_status'] === 'pending'): ?>
+                    <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  <?php elseif ($p['batch_status'] === 'disetujui'): ?>
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Disetujui</span>
+                  <?php else: ?>
+                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Ditolak</span>
+                  <?php endif; ?>
+                </td>
               </tr>
               <?php
               if (!$isFirstRow) {
@@ -282,7 +383,7 @@ include BASE_PATH . '/includes/sidebar.php';
 
             if (!$found2): ?>
               <tr>
-                <td colspan="9" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td>
+                <td colspan="11" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td>
               </tr>
             <?php endif; ?>
           </tbody>
@@ -304,6 +405,7 @@ include BASE_PATH . '/includes/sidebar.php';
         <div class="modal-body">
           <input type="hidden" name="jenis" id="modalJenis">
           <input type="hidden" name="tx_id" id="modalTxId">
+          <input type="hidden" name="detail_id" id="modalDetailId">
           <input type="hidden" name="action_type" id="modalAction">
           <div class="mb-3">
             <label class="form-label">Catatan (opsional)</label>
@@ -320,21 +422,61 @@ include BASE_PATH . '/includes/sidebar.php';
   </div>
 </div>
 <script>
+  function openBatchModal(detailId, txId, action) {
+    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    document.getElementById('modalJenis').value = 'pengurangan_batch';
+    document.getElementById('modalTxId').value = txId;
+    document.getElementById('modalDetailId').value = detailId;
+    document.getElementById('modalAction').value = action;
+
+    const isSetujui = action === 'setujui';
+    document.getElementById('modalTitle').textContent = isSetujui ? '✅ Konfirmasi Persetujuan Batch' : '❌ Konfirmasi Penolakan Batch';
+    document.getElementById('modalHeader').className = 'modal-header ' + (isSetujui ? 'bg-success text-white' : 'bg-danger text-white');
+    document.getElementById('modalAlert').className = 'alert ' + (isSetujui ? 'alert-success' : 'alert-danger');
+    document.getElementById('modalAlert').innerHTML = isSetujui ?
+      '<i class="bi bi-info-circle me-2"></i><strong>Menyetujui batch ini akan:</strong><br>' +
+      '• Mengurangi stok untuk jumlah batch ini saja<br>' +
+      '• Memotong stok dari penerimaan terkait<br>' +
+      '• Batch lain masih menunggu persetujuan terpisah' :
+      '<i class="bi bi-exclamation-triangle me-2"></i><strong>Menolak batch ini akan:</strong><br>' +
+      '• Membatalkan pengurangan untuk batch ini saja<br>' +
+      '• Batch lain tidak terpengaruh';
+    
+    document.getElementById('modalSubmitBtn').className = 'btn ' + (isSetujui ? 'btn-success' : 'btn-danger');
+    document.getElementById('modalSubmitBtn').innerHTML = isSetujui ? '<i class="bi bi-check-lg me-1"></i>Setujui Batch' : '<i class="bi bi-x-lg me-1"></i>Tolak Batch';
+
+    modal.show();
+  }
+
   function openModal(jenis, txId, action) {
     const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
     document.getElementById('modalJenis').value = jenis;
     document.getElementById('modalTxId').value = txId;
+    document.getElementById('modalDetailId').value = '';
     document.getElementById('modalAction').value = action;
 
     const isSetujui = action === 'setujui';
     document.getElementById('modalTitle').textContent = isSetujui ? '✅ Konfirmasi Persetujuan' : '❌ Konfirmasi Penolakan';
     document.getElementById('modalHeader').className = 'modal-header ' + (isSetujui ? 'bg-success text-white' : 'bg-danger text-white');
     document.getElementById('modalAlert').className = 'alert ' + (isSetujui ? 'alert-success' : 'alert-danger');
-    document.getElementById('modalAlert').textContent = isSetujui ?
-      'Menyetujui transaksi ini akan langsung mengubah stok utama.' :
-      'Menolak transaksi ini tidak akan mengubah stok.';
+    
+    if (jenis === 'pengurangan') {
+      document.getElementById('modalAlert').innerHTML = isSetujui ?
+        '<i class="bi bi-info-circle me-2"></i><strong>Menyetujui transaksi pengurangan ini akan:</strong><br>' +
+        '• Mengurangi stok utama sesuai jumlah yang diminta<br>' +
+        '• Memotong stok dari batch penerimaan yang dipilih (FIFO)<br>' +
+        '• Menghitung nilai persediaan berdasarkan harga batch yang digunakan' :
+        '<i class="bi bi-exclamation-triangle me-2"></i><strong>Menolak transaksi ini akan:</strong><br>' +
+        '• Membatalkan pengurangan stok<br>' +
+        '• Tidak mengubah stok barang';
+    } else {
+      document.getElementById('modalAlert').textContent = isSetujui ?
+        'Menyetujui transaksi ini akan langsung menambah stok utama.' :
+        'Menolak transaksi ini tidak akan mengubah stok.';
+    }
+    
     document.getElementById('modalSubmitBtn').className = 'btn ' + (isSetujui ? 'btn-success' : 'btn-danger');
-    document.getElementById('modalSubmitBtn').textContent = isSetujui ? 'Setujui' : 'Tolak';
+    document.getElementById('modalSubmitBtn').innerHTML = isSetujui ? '<i class="bi bi-check-lg me-1"></i>Setujui' : '<i class="bi bi-x-lg me-1"></i>Tolak';
 
     modal.show();
   }

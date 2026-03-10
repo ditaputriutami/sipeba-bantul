@@ -110,6 +110,8 @@ include BASE_PATH . '/includes/sidebar.php';
 
               if ($isFirstRow) {
                 $batchNo[$p['id']] = 1;
+              } else {
+                $batchNo[$p['id']]++;
               }
             ?>
               <tr>
@@ -156,9 +158,6 @@ include BASE_PATH . '/includes/sidebar.php';
                 <?php endif; ?>
               </tr>
             <?php
-              if (!$isFirstRow) {
-                $batchNo[$p['id']]++;
-              }
               $prevId = $p['id'];
             endwhile;
             ?>
