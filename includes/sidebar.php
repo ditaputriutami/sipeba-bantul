@@ -78,9 +78,6 @@ function isActive(string $path): string
         <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
           <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
         </a>
-        <a href="<?= BASE_URL ?>/transaksi/stock_opname/index.php" class="menu-item <?= isActive('/stock_opname/') ?>">
-          <i class="bi bi-clipboard-check"></i><span>Stock Opname</span>
-        </a>
       </div>
     <?php endif; ?>
 
@@ -108,20 +105,6 @@ function isActive(string $path): string
           $totalPending = $penerimaanPending + $penguranganPending;
           if ($totalPending > 0): ?>
             <span class="badge-count"><?= $totalPending ?></span>
-          <?php endif; ?>
-        </a>
-        <a href="<?= BASE_URL ?>/persetujuan/stock_opname/index.php" class="menu-item <?= isActive('/persetujuan/stock_opname/') ?>">
-          <i class="bi bi-clipboard2-pulse"></i><span>Approval Stock Opname</span>
-          <?php
-          // Count pending stock opname
-          $stmt_so = $conn->prepare("SELECT COUNT(*) as c FROM stock_opname WHERE status='pending' AND id_bagian=?");
-          $stmt_so->bind_param('i', $user['id_bagian']);
-          $stmt_so->execute();
-          $stockOpnamePending = $stmt_so->get_result()->fetch_assoc()['c'];
-          $stmt_so->close();
-
-          if ($stockOpnamePending > 0): ?>
-            <span class="badge-count"><?= $stockOpnamePending ?></span>
           <?php endif; ?>
         </a>
       </div>

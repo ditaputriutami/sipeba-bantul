@@ -185,16 +185,11 @@ if (isset($_GET['export'])) {
   <table border="1">
     <thead>
       <tr>
-        <th colspan="13" style="text-align:center; font-weight:bold;">DAFTAR HASIL PERHITUNGAN FISIK ATAS BARANG PERSEDIAAN/STOCK OPNAME</th>
+        <th colspan="13" style="text-align:center; font-weight:bold; font-size:12pt; padding:8px;">DAFTAR HASIL PERHITUNGAN FISIK ATAS BARANG PERSEDIAAN/STOCK OPNAME</th>
       </tr>
       <tr>
-        <th colspan="13" style="text-align:center; font-weight:bold;">DI LINGKUNGAN PEMERINTAH KABUPATEN BANTUL</th>
+        <th colspan="13" style="text-align:center; font-weight:bold; font-size:11pt; padding:5px;"><?= $nama_bagian_text ? strtoupper($nama_bagian_text) : 'SEKRETARIAT DAERAH KABUPATEN BANTUL' ?></th>
       </tr>
-      <?php if ($nama_bagian_text): ?>
-        <tr>
-          <th colspan="13" style="text-align:left; font-weight:bold;"><?= strtoupper($nama_bagian_text) ?></th>
-        </tr>
-      <?php endif; ?>
       <tr>
         <th colspan="13" style="text-align:left; font-weight:bold;">PER TANGGAL <?= $periode_text_upper ?></th>
       </tr>
@@ -340,7 +335,7 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="card">
       <div class="card-header text-center py-3">
         <div class="fw-bold" style="font-size:1.1rem">DAFTAR HASIL PERHITUNGAN FISIK ATAS BARANG PERSEDIAAN/STOCK OPNAME</div>
-        <div class="fw-bold">DI LINGKUNGAN PEMERINTAH KABUPATEN BANTUL</div>
+        <div class="fw-bold"><?= $nama_bagian_text ? strtoupper($nama_bagian_text) : 'SEKRETARIAT DAERAH KABUPATEN BANTUL' ?></div>
         <div class="text-muted mt-1" style="font-size:.85rem">PER TANGGAL <?= strtoupper($periode_text_upper) ?></div>
       </div>
       <div class="table-wrapper p-3 overflow-auto">
