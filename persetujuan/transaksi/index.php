@@ -128,9 +128,13 @@ $bagianFilter = ($role === 'superadmin') ? '' : "AND p.id_bagian=$id_bagian";
 
 $penPending = $conn->query("
     SELECT p.id, p.no_faktur, p.tanggal, p.jumlah, p.harga_satuan, p.jumlah_harga,
-           b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user
+       p.dari, p.keterangan, j.nama_jenis,
+       b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user
     FROM penerimaan p
-    JOIN barang b ON p.id_barang=b.id JOIN bagian bg ON p.id_bagian=bg.id JOIN users u ON p.id_user=u.id
+  JOIN barang b ON p.id_barang=b.id
+  JOIN jenis_barang j ON b.id_jenis_barang=j.id
+  JOIN bagian bg ON p.id_bagian=bg.id
+  JOIN users u ON p.id_user=u.id
     WHERE p.status='pending' $bagianFilter ORDER BY p.created_at
 ");
 
@@ -144,14 +148,16 @@ $jumlahPenPending = count($penPendingArray);
 // Query pengurangan dengan detail batch - show transactions with any pending batches
 $pengPending = $conn->query("
     SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.status as parent_status,
-           b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user,
+       p.keterangan, j.nama_jenis,
+       b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user,
            pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
            pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal,
            (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
             FROM pengurangan_detail pd2 
             WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total
     FROM pengurangan p
-    JOIN barang b ON p.id_barang=b.id 
+  JOIN barang b ON p.id_barang=b.id
+  JOIN jenis_barang j ON b.id_jenis_barang=j.id
     JOIN bagian bg ON p.id_bagian=bg.id 
     JOIN users u ON p.id_user=u.id
     LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
@@ -214,10 +220,13 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th>
               <th>No.Faktur</th>
               <th>Tanggal</th>
+              <th>Jenis Barang</th>
               <th>Barang</th>
               <th>Jumlah</th>
               <th>Harga Sat.</th>
               <th>Total</th>
+              <th>Dari</th>
+              <th>Keterangan</th>
               <th>Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -230,10 +239,13 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td><?= $no++ ?></td>
                 <td><code><?= htmlspecialchars($p['no_faktur']) ?></code></td>
                 <td><?= formatTanggal($p['tanggal']) ?></td>
+                <td><?= htmlspecialchars($p['nama_jenis']) ?></td>
                 <td><?= htmlspecialchars($p['nama_barang']) ?></td>
                 <td><?= number_format($p['jumlah']) ?> <?= $p['satuan'] ?></td>
                 <td><?= formatRupiah($p['harga_satuan']) ?></td>
                 <td><?= formatRupiah($p['jumlah_harga']) ?></td>
+                <td><?= htmlspecialchars($p['dari'] ?? '-') ?></td>
+                <td><?= htmlspecialchars($p['keterangan'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($p['nama_user']) ?></td>
                 <td>
                   <button class="btn btn-sm btn-success" onclick="openModal('penerimaan',<?= $p['id'] ?>,'setujui')"><i class="bi bi-check-lg"></i></button>
@@ -243,7 +255,7 @@ include BASE_PATH . '/includes/sidebar.php';
             <?php endforeach;
             if (!$found): ?>
               <tr>
-                <td colspan="9" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada penerimaan pending.</td>
+                <td colspan="12" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada penerimaan pending.</td>
               </tr>
             <?php endif; ?>
           </tbody>
@@ -266,12 +278,14 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th>
               <th>No.Permintaan</th>
               <th>Tanggal</th>
+              <th>Jenis Barang</th>
               <th>Barang</th>
               <th>Batch Info</th>
               <th>Jumlah</th>
               <th>Harga Satuan</th>
               <th>Subtotal</th>
               <th>Total Harga</th>
+              <th>Keterangan</th>
               <th>Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -301,6 +315,8 @@ include BASE_PATH . '/includes/sidebar.php';
 
               if ($isFirstRow) {
                 $batchNo[$p['id']] = 1;
+              } else {
+                $batchNo[$p['id']]++;
               }
 
               $subtotal = ($p['jumlah_dipotong'] ?? 0) * ($p['batch_harga_satuan'] ?? 0);
@@ -315,6 +331,7 @@ include BASE_PATH . '/includes/sidebar.php';
                     <?php endif; ?>
                   </td>
                   <td rowspan="<?= $rowspan ?>"><?= formatTanggal($p['tanggal']) ?></td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_jenis']) ?></td>
                   <td rowspan="<?= $rowspan ?>">
                     <strong><?= htmlspecialchars($p['nama_barang']) ?></strong><br>
                     <small class="text-muted">Total: <?= number_format($p['jumlah']) ?> <?= $p['satuan'] ?></small>
@@ -353,6 +370,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-end" rowspan="<?= $rowspan ?>">
                     <strong class="text-primary fs-6"><?= formatRupiah($p['jumlah_harga_total']) ?></strong>
                   </td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['keterangan'] ?? '-') ?></td>
                   <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_user']) ?></td>
                 <?php endif; ?>
 
@@ -365,18 +383,14 @@ include BASE_PATH . '/includes/sidebar.php';
                     <i class="bi bi-x-lg"></i>
                   </button>
                 </td>
-                </td>
               </tr>
               <?php
-              if (!$isFirstRow) {
-                $batchNo[$p['id']]++;
-              }
               $prevId = $p['id'];
             endforeach;
 
             if (!$found2): ?>
               <tr>
-                <td colspan="11" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td>
+                <td colspan="13" class="text-center text-muted py-3"><i class="bi bi-inbox me-2"></i>Tidak ada pengurangan pending.</td>
               </tr>
             <?php endif; ?>
           </tbody>
