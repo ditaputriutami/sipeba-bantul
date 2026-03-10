@@ -14,6 +14,7 @@ if ($filterStatus) $where .= " AND p.status='" . mysqli_real_escape_string($conn
 // Query untuk mendapatkan detail batch per pengurangan
 $list = $conn->query("
     SELECT p.*, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user, ap.nama as nama_approver,
+           j.nama_jenis, j.kode_jenis,
            pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
            pen.tanggal as batch_tanggal, pen.no_faktur as batch_no_faktur,
            (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
@@ -24,6 +25,7 @@ $list = $conn->query("
             WHERE pd3.id_pengurangan = p.id) as batch_count
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id
+    JOIN jenis_barang j ON b.id_jenis_barang=j.id
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     LEFT JOIN users ap ON p.id_approver=ap.id
@@ -77,10 +79,12 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>#</th>
               <th>No. Permintaan</th>
               <th>Tanggal</th>
+              <th>Jenis Barang</th>
               <th>Nama Barang</th>
               <th>Jumlah</th>
               <th>Harga Satuan</th>
               <th>Jumlah Harga</th>
+              <th>Keterangan</th>
               <?php if ($role === 'superadmin'): ?><th>Bagian</th><?php endif; ?>
               <th>Status</th>
               <th>Aksi</th>
@@ -119,6 +123,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td rowspan="<?= $rowspan ?>"><?= $no++ ?></td>
                   <td rowspan="<?= $rowspan ?>"><code><?= htmlspecialchars($p['no_permintaan']) ?></code></td>
                   <td rowspan="<?= $rowspan ?>"><?= formatTanggal($p['tanggal']) ?></td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_jenis']) ?></td>
                   <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_barang']) ?></td>
                 <?php endif; ?>
 
@@ -132,6 +137,7 @@ include BASE_PATH . '/includes/sidebar.php';
 
                 <?php if ($isFirstRow): ?>
                   <td class="text-end" rowspan="<?= $rowspan ?>"><strong><?= formatRupiah($p['jumlah_harga_total']) ?></strong></td>
+                  <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['keterangan'] ?? '-') ?></td>
                   <?php if ($role === 'superadmin'): ?>
                     <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_bagian']) ?></td>
                   <?php endif; ?>

@@ -271,7 +271,7 @@ if (isset($_GET['export'])) {
             <td align="center" style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['satuan']) ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $r['harga_satuan'] ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $total_rp ?></td>
-            <td style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['keterangan']) ?></td>
+            <td style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
           </tr>
         <?php endforeach; ?>
       <?php endforeach; ?>
@@ -476,7 +476,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                   <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
                   <td class="text-end fw-semibold"><?= number_format($total_rp, 0, ',', '.') ?></td>
-                  <td><?= htmlspecialchars($r['keterangan']) ?></td>
+                  <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
                 </tr>
               <?php endforeach; ?>
             <?php endforeach; ?>

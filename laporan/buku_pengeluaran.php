@@ -18,7 +18,7 @@ if ($id_bagian == 9) $f_bagian = 0;
 $f_dari    = $_GET['dari'] ?? date('Y-m-01');
 $f_sampai  = $_GET['sampai'] ?? date('Y-m-d');
 
-$where = "WHERE p.status IN ('disetujui','disetujui sebagian') AND pd.status='disetujui'";
+$where = "WHERE p.status IN ('disetujui','disetujui sebagian')";
 if ($f_bagian) $where .= " AND p.id_bagian=$f_bagian";
 if ($f_dari)   $where .= " AND p.tanggal >= '$f_dari'";
 if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
