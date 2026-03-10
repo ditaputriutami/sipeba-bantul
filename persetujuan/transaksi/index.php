@@ -19,7 +19,7 @@ $id_bagian = getUserBagian();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
   $jenis    = $_POST['jenis'] ?? '';  // 'penerimaan' or 'pengurangan' or 'pengurangan_batch'
   $tx_id    = (int)($_POST['tx_id'] ?? 0);
-  $detail_id= (int)($_POST['detail_id'] ?? 0); // For batch-level approval
+  $detail_id = (int)($_POST['detail_id'] ?? 0); // For batch-level approval
   $action   = $_POST['action_type']; // 'setujui' or 'tolak'
   $catatan  = sanitize($_POST['catatan_approval'] ?? '');
   $now      = date('Y-m-d H:i:s');
@@ -55,10 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
       if ($action === 'setujui') {
         // Update batch status
         $conn->query("UPDATE pengurangan_detail SET status='disetujui', id_approver=$approver, approved_at='$now', catatan_approval='" . mysqli_real_escape_string($conn, $catatan) . "' WHERE id=$detail_id");
-        
+
         // Update sisa_stok penerimaan untuk batch ini
         $conn->query("UPDATE penerimaan SET sisa_stok = sisa_stok - {$detail['jumlah_dipotong']} WHERE id={$detail['id_penerimaan']}");
-        
+
         // Update stok_current (kurangi)
         $stmt = $conn->prepare("UPDATE stok_current SET stok = stok - ? WHERE id_barang=? AND id_bagian=?");
         $stmt->bind_param('iii', $detail['jumlah_dipotong'], $detail['id_barang'], $detail['id_bagian']);
@@ -71,11 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
 
       // Check if all batches are processed (approved or rejected)
       $checkAll = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']}")->fetch_assoc();
-      
+
       if ($checkAll['pending'] == 0) {
         // All batches processed, update parent transaction
         $approvedBatches = $conn->query("SELECT SUM(jumlah_dipotong) as total FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']} AND status='disetujui'")->fetch_row()[0];
-        
+
         if ($approvedBatches > 0) {
           // At least some batches approved
           $allApproved = $conn->query("SELECT COUNT(*) FROM pengurangan_detail WHERE id_pengurangan={$detail['id_pengurangan']} AND status='ditolak'")->fetch_row()[0];
@@ -146,14 +146,10 @@ $pengPending = $conn->query("
     SELECT p.id, p.no_permintaan, p.tanggal, p.jumlah, p.status as parent_status,
            b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_user,
            pd.id as detail_id, pd.jumlah_dipotong, pd.harga_satuan as batch_harga_satuan,
-           pd.status as batch_status,
            pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal,
            (SELECT SUM(pd2.jumlah_dipotong * pd2.harga_satuan) 
             FROM pengurangan_detail pd2 
-            WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total,
-           (SELECT COUNT(*) 
-            FROM pengurangan_detail pd3 
-            WHERE pd3.id_pengurangan = p.id AND pd3.status='pending') as batch_pending_count
+            WHERE pd2.id_pengurangan = p.id) as jumlah_harga_total
     FROM pengurangan p
     JOIN barang b ON p.id_barang=b.id 
     JOIN bagian bg ON p.id_bagian=bg.id 
@@ -182,9 +178,11 @@ include BASE_PATH . '/includes/sidebar.php';
   .batch-row {
     background-color: #f8f9fa;
   }
+
   .batch-row:hover {
     background-color: #e9ecef !important;
   }
+
   .table tbody tr.batch-row td {
     border-top: 2px solid #dee2e6;
   }
@@ -304,7 +302,7 @@ include BASE_PATH . '/includes/sidebar.php';
               if ($isFirstRow) {
                 $batchNo[$p['id']] = 1;
               }
-              
+
               $subtotal = ($p['jumlah_dipotong'] ?? 0) * ($p['batch_harga_satuan'] ?? 0);
             ?>
               <tr <?= $rowspan > 1 ? 'class="batch-row"' : '' ?>>
@@ -340,12 +338,12 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td class="text-end">
                   <strong><?= number_format($p['jumlah_dipotong'] ?? $p['jumlah']) ?></strong> <?= $p['satuan'] ?>
                 </td>
-                
+
                 <!-- Harga Satuan per batch -->
                 <td class="text-end">
                   <strong><?= formatRupiah($p['batch_harga_satuan'] ?? 0) ?></strong>
                 </td>
-                
+
                 <!-- Subtotal per batch -->
                 <td class="text-end">
                   <?= formatRupiah($subtotal) ?>
@@ -357,21 +355,16 @@ include BASE_PATH . '/includes/sidebar.php';
                   </td>
                   <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($p['nama_user']) ?></td>
                 <?php endif; ?>
-                
+
                 <!-- Aksi per batch -->
                 <td class="text-center">
-                  <?php if ($p['batch_status'] === 'pending'): ?>
-                    <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
-                      <i class="bi bi-check-lg"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
-                      <i class="bi bi-x-lg"></i>
-                    </button>
-                  <?php elseif ($p['batch_status'] === 'disetujui'): ?>
-                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Disetujui</span>
-                  <?php else: ?>
-                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Ditolak</span>
-                  <?php endif; ?>
+                  <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </td>
                 </td>
               </tr>
               <?php
@@ -441,7 +434,7 @@ include BASE_PATH . '/includes/sidebar.php';
       '<i class="bi bi-exclamation-triangle me-2"></i><strong>Menolak batch ini akan:</strong><br>' +
       '• Membatalkan pengurangan untuk batch ini saja<br>' +
       '• Batch lain tidak terpengaruh';
-    
+
     document.getElementById('modalSubmitBtn').className = 'btn ' + (isSetujui ? 'btn-success' : 'btn-danger');
     document.getElementById('modalSubmitBtn').innerHTML = isSetujui ? '<i class="bi bi-check-lg me-1"></i>Setujui Batch' : '<i class="bi bi-x-lg me-1"></i>Tolak Batch';
 
@@ -459,7 +452,7 @@ include BASE_PATH . '/includes/sidebar.php';
     document.getElementById('modalTitle').textContent = isSetujui ? '✅ Konfirmasi Persetujuan' : '❌ Konfirmasi Penolakan';
     document.getElementById('modalHeader').className = 'modal-header ' + (isSetujui ? 'bg-success text-white' : 'bg-danger text-white');
     document.getElementById('modalAlert').className = 'alert ' + (isSetujui ? 'alert-success' : 'alert-danger');
-    
+
     if (jenis === 'pengurangan') {
       document.getElementById('modalAlert').innerHTML = isSetujui ?
         '<i class="bi bi-info-circle me-2"></i><strong>Menyetujui transaksi pengurangan ini akan:</strong><br>' +
@@ -474,7 +467,7 @@ include BASE_PATH . '/includes/sidebar.php';
         'Menyetujui transaksi ini akan langsung menambah stok utama.' :
         'Menolak transaksi ini tidak akan mengubah stok.';
     }
-    
+
     document.getElementById('modalSubmitBtn').className = 'btn ' + (isSetujui ? 'btn-success' : 'btn-danger');
     document.getElementById('modalSubmitBtn').innerHTML = isSetujui ? '<i class="bi bi-check-lg me-1"></i>Setujui' : '<i class="bi bi-x-lg me-1"></i>Tolak';
 

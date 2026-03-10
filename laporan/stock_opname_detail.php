@@ -57,13 +57,17 @@ if ($use_date_filter) {
 
 $where_bagian = $f_bagian ? " AND id_bagian=$f_bagian" : "";
 $where_bagian_so = $f_bagian ? " AND so.id_bagian=$f_bagian" : "";
+$where_bagian_sc = $f_bagian ? " AND sc.id_bagian=$f_bagian" : "";
 $where_jenis = $id_jenis ? " AND b.id_jenis_barang = $id_jenis" : "";
 
-// Ambil tahun-tahun yang ada datanya
+// Ambil tahun-tahun yang ada datanya (dari penerimaan dan pengurangan)
 $years_query = "
-    SELECT DISTINCT YEAR(tanggal) as tahun 
-    FROM stock_opname 
-    WHERE status = 'disetujui' $where_bagian
+    SELECT DISTINCT tahun FROM (
+        SELECT YEAR(tanggal) as tahun FROM penerimaan WHERE status = 'disetujui' $where_bagian
+        UNION
+        SELECT YEAR(tanggal) as tahun FROM pengurangan WHERE status = 'disetujui' $where_bagian
+    ) AS all_years
+    WHERE tahun IS NOT NULL
     ORDER BY tahun DESC
 ";
 $years_result = $conn->query($years_query);
@@ -86,8 +90,11 @@ if ($f_bagian) {
   $nama_bagian_display = 'SEKRETARIAT DAERAH KABUPATEN BANTUL';
 }
 
-// Query Detail: Mengambil transaksi stock opname agregat per barang
-$query = "
+// Query Detail: Menghitung saldo akhir per barang berdasarkan periode
+// Menampilkan breakdown detail dari summary stock opname
+if ($use_date_filter) {
+  // Filter berdasarkan range tanggal
+  $query = "
     SELECT 
         b.id as id_barang,
         b.kode_barang,
@@ -95,19 +102,71 @@ $query = "
         b.satuan,
         j.nama_jenis,
         j.kode_jenis,
-        SUM(so.stok_fisik) as jumlah,
+        -- Hitung saldo akhir: (penerimaan sampai akhir periode) - (pengurangan sampai akhir periode)
+        (
+            COALESCE((
+                SELECT SUM(p.jumlah)
+                FROM penerimaan p
+                WHERE p.id_barang = b.id 
+                  AND p.status = 'disetujui' 
+                  AND p.tanggal <= '$f_sampai_tanggal'
+                  $where_bagian
+            ), 0) -
+            COALESCE((
+                SELECT SUM(pr.jumlah)
+                FROM pengurangan pr
+                WHERE pr.id_barang = b.id 
+                  AND pr.status IN ('disetujui', 'disetujui sebagian')
+                  AND pr.tanggal <= '$f_sampai_tanggal'
+                  $where_bagian
+            ), 0)
+        ) as jumlah,
         COALESCE((SELECT harga_satuan FROM penerimaan WHERE id_barang = b.id AND status = 'disetujui' ORDER BY tanggal DESC, id DESC LIMIT 1), 0) as harga_satuan,
-        GROUP_CONCAT(DISTINCT COALESCE(so.keterangan, '-') SEPARATOR '; ') as keterangan
-    FROM stock_opname so
-    JOIN barang b ON so.id_barang = b.id
+        '-' as keterangan
+    FROM barang b
     JOIN jenis_barang j ON b.id_jenis_barang = j.id
-    WHERE so.status = 'disetujui'
-        $where_tanggal
-        $where_bagian_so
-        $where_jenis
-    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis
+    WHERE 1=1 $where_jenis
+    HAVING jumlah > 0
     ORDER BY j.kode_jenis ASC, b.nama_barang ASC
-";
+  ";
+} else {
+  // Filter berdasarkan tahun
+  $query = "
+    SELECT 
+        b.id as id_barang,
+        b.kode_barang,
+        b.nama_barang,
+        b.satuan,
+        j.nama_jenis,
+        j.kode_jenis,
+        -- Hitung saldo akhir: (penerimaan sampai akhir tahun) - (pengurangan sampai akhir tahun)
+        (
+            COALESCE((
+                SELECT SUM(p.jumlah)
+                FROM penerimaan p
+                WHERE p.id_barang = b.id 
+                  AND p.status = 'disetujui' 
+                  AND YEAR(p.tanggal) <= $f_tahun
+                  $where_bagian
+            ), 0) -
+            COALESCE((
+                SELECT SUM(pr.jumlah)
+                FROM pengurangan pr
+                WHERE pr.id_barang = b.id 
+                  AND pr.status IN ('disetujui', 'disetujui sebagian')
+                  AND YEAR(pr.tanggal) <= $f_tahun
+                  $where_bagian
+            ), 0)
+        ) as jumlah,
+        COALESCE((SELECT harga_satuan FROM penerimaan WHERE id_barang = b.id AND status = 'disetujui' ORDER BY tanggal DESC, id DESC LIMIT 1), 0) as harga_satuan,
+        '-' as keterangan
+    FROM barang b
+    JOIN jenis_barang j ON b.id_jenis_barang = j.id
+    WHERE 1=1 $where_jenis
+    HAVING jumlah > 0
+    ORDER BY j.kode_jenis ASC, b.nama_barang ASC
+  ";
+}
 
 $data = $conn->query($query);
 
