@@ -18,13 +18,42 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // ---- Sidebar collapse/expand (desktop & tablet) ----
-  function toggleSidebarCollapse() {
+  function toggleSidebarCollapse(e) {
+    // Prevent default anchor/button behavior that might cause scroll
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const isLargeScreen = window.innerWidth >= 1200;
     console.log("Toggle clicked, isLargeScreen:", isLargeScreen);
 
     if (isLargeScreen) {
+      // Save current scroll position before toggle
+      const currentScrollTop = sidebar?.scrollTop || 0;
+      console.log("Saving scroll position:", currentScrollTop);
+
       // Desktop: toggle collapsed state
       sidebar?.classList.toggle("collapsed");
+
+      // Restore scroll position immediately and after transition
+      if (sidebar) {
+        sidebar.scrollTop = currentScrollTop;
+      }
+      
+      // Also restore after animation completes (300ms transition)
+      requestAnimationFrame(() => {
+        if (sidebar) {
+          sidebar.scrollTop = currentScrollTop;
+        }
+      });
+      
+      setTimeout(() => {
+        if (sidebar) {
+          sidebar.scrollTop = currentScrollTop;
+          console.log("Restored scroll position:", currentScrollTop);
+        }
+      }, 350);
 
       // Save state to localStorage
       const isCollapsed = sidebar?.classList.contains("collapsed");
@@ -65,14 +94,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ---- Event listeners ----
   if (toggleBtn) {
-    toggleBtn.addEventListener("click", toggleSidebarCollapse);
+    toggleBtn.addEventListener("click", function(e) {
+      toggleSidebarCollapse(e);
+    });
     console.log("Main toggle button listener attached");
   } else {
     console.warn("mainSidebarToggle button not found!");
   }
 
   if (sidebarClose) {
-    sidebarClose.addEventListener("click", toggleSidebarCollapse);
+    sidebarClose.addEventListener("click", function(e) {
+      toggleSidebarCollapse(e);
+    });
     console.log("Sidebar close button listener attached");
   }
 

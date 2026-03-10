@@ -8,6 +8,9 @@ $action = $_POST['action'] ?? $_GET['action'] ?? 'list';
 $id     = (int)($_POST['id'] ?? $_GET['id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Only superadmin can create/edit/delete
+  requireRole(['superadmin']);
+  
   $kode = sanitize($_POST['kode_jenis'] ?? '');
   $nama = sanitize($_POST['nama_jenis'] ?? '');
 
@@ -43,15 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-// Fetch for edit modal prefill
+// Fetch for edit modal prefill (only for superadmin)
 $editItem = null;
-if ($action === 'edit' && $id) {
+if ($action === 'edit' && $id && getUserRole() === 'superadmin') {
   $stmt = $conn->prepare("SELECT * FROM jenis_barang WHERE id=?");
   $stmt->bind_param('i', $id);
   $stmt->execute();
   $editItem = $stmt->get_result()->fetch_assoc();
   $stmt->close();
 }
+
+$role = getUserRole();
 
 $list = $conn->query("SELECT j.*, (SELECT COUNT(*) FROM barang b WHERE b.id_jenis_barang=j.id) as jml_barang FROM jenis_barang j ORDER BY j.kode_jenis");
 
@@ -71,7 +76,8 @@ include BASE_PATH . '/includes/sidebar.php';
     <?php endif; ?>
 
     <div class="row g-3">
-      <!-- Form Panel -->
+      <!-- Form Panel (Only for Superadmin) -->
+      <?php if ($role === 'superadmin'): ?>
       <div class="col-lg-6" id="formPanel" style="display: <?= $editItem ? 'block' : 'none' ?>">
         <div class="card">
           <div class="card-header"><i class="bi bi-<?= $editItem ? 'pencil' : 'plus-lg' ?> me-2"></i><?= $editItem ? 'Edit' : 'Tambah' ?> Jenis Barang</div>
@@ -99,15 +105,18 @@ include BASE_PATH . '/includes/sidebar.php';
           </div>
         </div>
       </div>
+      <?php endif; ?>
       <!-- List -->
-      <div class="<?= $editItem ? 'col-lg-6' : 'col-lg-12' ?>" id="listPanel">
+      <div class="<?= ($role === 'superadmin' && $editItem) ? 'col-lg-6' : 'col-lg-12' ?>" id="listPanel">
         <div class="card">
           <div class="card-header d-flex align-items-center justify-content-between">
             <span><i class="bi bi-list-ul me-2"></i>Daftar Jenis Barang</span>
             <div class="d-flex gap-2">
+              <?php if ($role === 'superadmin'): ?>
               <button type="button" class="btn btn-primary btn-sm" id="btnTambahJenis" style="display: <?= $editItem ? 'none' : 'block' ?>">
                 <i class="bi bi-plus-lg me-1"></i>Tambah Jenis Barang
               </button>
+              <?php endif; ?>
               <input type="text" class="form-control form-control-sm" style="width:180px" data-table-search="jenisTable" placeholder="Cari...">
             </div>
           </div>
@@ -131,12 +140,16 @@ include BASE_PATH . '/includes/sidebar.php';
                     <td><?= htmlspecialchars($j['nama_jenis']) ?></td>
                     <td><span><?= $j['jml_barang'] ?></span></td>
                     <td>
+                      <?php if ($role === 'superadmin'): ?>
                       <a href="?action=edit&id=<?= $j['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
                       <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="id" value="<?= $j['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus jenis barang ini?"><i class="bi bi-trash"></i></button>
                       </form>
+                      <?php else: ?>
+                      <span class="text-muted fst-italic">—</span>
+                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endwhile; ?>
