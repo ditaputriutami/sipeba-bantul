@@ -38,6 +38,24 @@ $data = $conn->query("
 
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
+// Nama bagian yang ditampilkan pada header laporan
+$namaBagianLaporan = 'Sekretariat Daerah';
+if ($f_bagian > 0) {
+  if ($role !== 'superadmin' && !empty($user['nama_bagian']) && (int)$id_bagian === (int)$f_bagian) {
+    $namaBagianLaporan = $user['nama_bagian'];
+  } else {
+    $qBagian = $conn->query("SELECT nama FROM bagian WHERE id=" . (int)$f_bagian . " LIMIT 1");
+    if ($qBagian && $qBagian->num_rows > 0) {
+      $namaBagianLaporan = $qBagian->fetch_assoc()['nama'];
+    }
+  }
+}
+
+// Hindari duplikasi "Bagian Bagian ..."
+$labelBagianLaporan = preg_match('/^Bagian\s+/i', (string)$namaBagianLaporan)
+  ? $namaBagianLaporan
+  : 'Bagian ' . $namaBagianLaporan;
+
 // Export Excel handler
 if (isset($_GET['export'])) {
   header('Content-Type: application/vnd.ms-excel; charset=utf-8');
@@ -66,6 +84,9 @@ if (isset($_GET['export'])) {
       </tr>
       <tr>
         <th colspan="20" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
+      </tr>
+      <tr>
+        <th colspan="20" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
       </tr>
       <tr>
         <th colspan="20" style="border:none;"></th>
@@ -211,6 +232,7 @@ include BASE_PATH . '/includes/sidebar.php';
         <div class="text-center">
           <div class="fw-bold" style="font-size:1.1rem">BUKU PENERIMAAN BARANG PERSEDIAAN</div>
           <div class="text-muted" style="font-size:.9rem">Periode: <?= formatTanggal($f_dari) ?> s.d. <?= formatTanggal($f_sampai) ?></div>
+          <div class="fw-semibold" style="font-size:1rem"><?= htmlspecialchars($labelBagianLaporan) ?></div>
         </div>
       </div>
       <div class="table-responsive p-3">
