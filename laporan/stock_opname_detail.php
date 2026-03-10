@@ -184,7 +184,7 @@ if (isset($_GET['export'])) {
         <th colspan="13" style="text-align:center; font-weight:bold; font-size:13pt; padding:8px; border:1px solid #000;">JUMLAH PERSEDIAAN/STOCK OPNAME</th>
       </tr>
       <tr>
-        <th colspan="13" style="text-align:center; font-weight:bold; font-size:11pt; padding:6px; border:1px solid #000;"><?= strtoupper($nama_bagian_display) ?></th>
+        <th colspan="13" style="text-align:center; font-weight:bold; font-size:11pt; padding:6px; border:1px solid #000;">BAGIAN <?= strtoupper($nama_bagian_display) ?></th>
       </tr>
       <tr>
         <th colspan="13" style="text-align:center; font-weight:bold; font-size:10pt; padding:6px; border:1px solid #000;">PERIODE: <?= strtoupper($periode_display) ?></th>
@@ -204,6 +204,7 @@ if (isset($_GET['export'])) {
       <?php
       $no = 1;
       $grand_total = 0;
+      $total_qty = 0;
       foreach ($items as $nama_jenis => $rows):
         $kj_raw = $rows[0]['kode_jenis'];
         if (strpos($kj_raw, '.') !== false) {
@@ -236,6 +237,7 @@ if (isset($_GET['export'])) {
         <?php foreach ($rows as $r):
           $total_rp = $r['jumlah'] * $r['harga_satuan'];
           $grand_total += $total_rp;
+          $total_qty += $r['jumlah'];
 
           $kode_raw = $r['kode_barang'];
           if (strpos($kode_raw, '.') !== false) {
@@ -278,7 +280,11 @@ if (isset($_GET['export'])) {
     </tbody>
     <tfoot>
       <tr style="font-weight:bold;">
-        <td colspan="11" align="center" style="border:1px solid #000; padding:6px; font-weight:bold;">JUMLAH</td>
+        <td colspan="2" style="border:1px solid #000; padding:6px;"></td>
+        <td colspan="7" align="center" style="border:1px solid #000; padding:6px; font-weight:bold;">JUMLAH</td>
+        <td align="center" style="border:1px solid #000; padding:6px; font-weight:bold; mso-number-format:'0';"><?= $total_qty ?></td>
+        <td style="border:1px solid #000; padding:6px;"></td>
+        <td style="border:1px solid #000; padding:6px;"></td>
         <td align="right" style="border:1px solid #000; mso-number-format:'#,##0'; font-weight:bold; padding:6px;"><?= $grand_total ?></td>
         <td style="border:1px solid #000;"></td>
       </tr>
@@ -358,9 +364,6 @@ include BASE_PATH . '/includes/sidebar.php';
             <button type="submit" class="btn btn-primary btn-sm me-1">
               <i class="bi bi-funnel me-1"></i>Filter
             </button>
-            <a href="?id_jenis=<?= $id_jenis ?>&id_bagian=<?= $f_bagian ?>" class="btn btn-secondary btn-sm">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-            </a>
           </div>
         </form>
       </div>
@@ -383,7 +386,7 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="card">
       <div class="card-header text-center py-3">
         <div class="fw-bold" style="font-size:1.1rem">JUMLAH PERSEDIAAN/STOCK OPNAME</div>
-        <div class="fw-bold"><?= $nama_bagian_display ?></div>
+        <div class="fw-bold">Bagian <?= $nama_bagian_display ?></div>
         <div class="text-muted mt-1" style="font-size:.85rem">PERIODE: <?= $periode_display ?></div>
       </div>
       <div class="table-responsive p-3">
@@ -413,6 +416,7 @@ include BASE_PATH . '/includes/sidebar.php';
             <?php
             $no = 1;
             $grand_total = 0;
+            $total_qty = 0;
             foreach ($items as $nama_jenis => $rows):
               $kj_raw = $rows[0]['kode_jenis'];
               if (strpos($kj_raw, '.') !== false) {
@@ -441,6 +445,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <?php foreach ($rows as $r):
                 $total_rp = $r['jumlah'] * $r['harga_satuan'];
                 $grand_total += $total_rp;
+                $total_qty += $r['jumlah'];
 
                 $kode_raw = $r['kode_barang'];
                 if (strpos($kode_raw, '.') !== false) {
@@ -483,7 +488,11 @@ include BASE_PATH . '/includes/sidebar.php';
           </tbody>
           <tfoot class="table-secondary fw-bold text-dark">
             <tr>
-              <td colspan="11" class="text-end">JUMLAH</td>
+              <td colspan="2"></td>
+              <td colspan="7" class="text-center">JUMLAH</td>
+              <td class="text-center"><?= number_format($total_qty, 0, ',', '.') ?></td>
+              <td></td>
+              <td></td>
               <td class="text-end"><?= number_format($grand_total, 0, ',', '.') ?></td>
               <td></td>
             </tr>

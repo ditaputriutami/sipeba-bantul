@@ -83,10 +83,10 @@ if (isset($_GET['export'])) {
         <th colspan="20" style="text-align:center; font-size:14pt; font-weight:bold; border:none;">BUKU PENERIMAAN BARANG PERSEDIAAN</th>
       </tr>
       <tr>
-        <th colspan="20" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
+        <th colspan="11" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
       </tr>
       <tr>
-        <th colspan="20" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
+        <th colspan="11" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
       </tr>
       <tr>
         <th colspan="20" style="border:none;"></th>
@@ -165,6 +165,15 @@ if (isset($_GET['export'])) {
       }
       ?>
     </tbody>
+    <tfoot>
+      <tr style="font-weight:bold; background-color:#e9ecef;">
+        <td colspan="7" style="text-align:right;">JUMLAH</td>
+        <td style="text-align:center;"><?= number_format($totalQty, 0, '', '') ?></td>
+        <td colspan="2"></td>
+        <td style="text-align:right;"><?= number_format($totalJumlah, 0, '', '') ?></td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
 <?php
   exit;
@@ -315,7 +324,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <?php if (!empty($htmlData)): ?>
             <tfoot class="table-secondary fw-bold">
               <tr>
-                <td colspan="7" class="text-end">TOTAL</td>
+                <td colspan="7" class="text-end">JUMLAH</td>
                 <td class="text-center"><?= number_format($totalQty, 0, ',', '.') ?></td>
                 <td></td>
                 <td></td>

@@ -84,10 +84,10 @@ if (isset($_GET['export'])) {
         <th colspan="11" style="text-align:center; font-size:14pt; font-weight:bold; border:none;">BUKU PENGELUARAN BARANG PERSEDIAAN</th>
       </tr>
       <tr>
-        <th colspan="11" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
+        <th colspan="11" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
       </tr>
       <tr>
-        <th colspan="11" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
+        <th colspan="11" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
       </tr>
       <tr>
         <th colspan="11" style="border:none;"></th>
@@ -147,7 +147,7 @@ if (isset($_GET['export'])) {
     </tbody>
     <tfoot>
       <tr style="font-weight:bold; background-color:#e9ecef;">
-        <td colspan="6" style="text-align:right;">TOTAL</td>
+        <td colspan="6" style="text-align:right;">JUMLAH</td>
         <td style="text-align:center;"><?= number_format($totalQty, 0, '', '') ?></td>
         <td colspan="2"></td>
         <td style="text-align:right;"><?= number_format($totalNilai, 0, '', '') ?></td>
@@ -208,8 +208,8 @@ include BASE_PATH . '/includes/sidebar.php';
     <div class="card">
       <div class="card-header text-center">
         <div class="fw-bold">BUKU PENGELUARAN BARANG PERSEDIAAN</div>
-        <div class="text-muted" style="font-size:.85rem">Periode: <?= formatTanggal($f_dari) ?> s.d. <?= formatTanggal($f_sampai) ?></div>
         <div class="fw-semibold" style="font-size:1rem"><?= htmlspecialchars($labelBagianLaporan) ?></div>
+        <div class="text-muted" style="font-size:.85rem">Periode: <?= formatTanggal($f_dari) ?> s.d. <?= formatTanggal($f_sampai) ?></div>
       </div>
       <div class="table-wrapper">
         <table class="table table-bordered table-sm align-middle" style="font-size:.82rem; white-space:nowrap;">
@@ -284,7 +284,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <?php if ($found): ?>
             <tfoot>
               <tr class="table-secondary fw-bold">
-                <td colspan="6" class="text-end">TOTAL</td>
+                <td colspan="6" class="text-end">JUMLAH</td>
                 <td class="text-center"><?= number_format($totalQty) ?></td>
                 <td colspan="2"></td>
                 <td class="text-end text-danger"><?= formatRupiah($totalNilai) ?></td>
