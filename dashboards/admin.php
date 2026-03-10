@@ -4,26 +4,26 @@ requireRole(['superadmin']);
 $pageTitle = 'Dashboard Admin';
 
 // ---- Statistik Kartu ----
-$totalBarang    = $conn->query("SELECT COUNT(*) FROM barang")->fetch_row()[0];
+$totalStok      = $conn->query("SELECT COALESCE(SUM(stok),0) FROM stok_current")->fetch_row()[0];
 $totalUser      = $conn->query("SELECT COUNT(*) FROM users WHERE role != 'superadmin'")->fetch_row()[0];
-$totalPenerimaan= $conn->query("SELECT COUNT(*) FROM penerimaan WHERE status='disetujui'")->fetch_row()[0];
-$totalPengurangan=$conn->query("SELECT COUNT(*) FROM pengurangan WHERE status='disetujui'")->fetch_row()[0];
+$totalPenerimaan = $conn->query("SELECT COUNT(*) FROM penerimaan WHERE status='disetujui'")->fetch_row()[0];
+$totalPengurangan = $conn->query("SELECT COUNT(*) FROM pengurangan WHERE status='disetujui'")->fetch_row()[0];
 $pendingAll     = $conn->query("SELECT (SELECT COUNT(*) FROM penerimaan WHERE status='pending')+(SELECT COUNT(*) FROM pengurangan WHERE status='pending')")->fetch_row()[0];
 
 // ---- Tren 6 bulan terakhir (penerimaan + pengurangan disetujui) ----
 $trendData = [];
 for ($i = 5; $i >= 0; $i--) {
-    $monthStart = date('Y-m-01', strtotime("-$i months"));
-    $monthEnd   = date('Y-m-t', strtotime("-$i months"));
-    $label      = date('M Y', strtotime("-$i months"));
+  $monthStart = date('Y-m-01', strtotime("-$i months"));
+  $monthEnd   = date('Y-m-t', strtotime("-$i months"));
+  $label      = date('M Y', strtotime("-$i months"));
 
-    $rPen  = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM penerimaan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
-    $rPeng = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM pengurangan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
-    $trendData[] = ['label' => $label, 'penerimaan' => (int)$rPen, 'pengurangan' => (int)$rPeng];
+  $rPen  = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM penerimaan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
+  $rPeng = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM pengurangan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
+  $trendData[] = ['label' => $label, 'penerimaan' => (int)$rPen, 'pengurangan' => (int)$rPeng];
 }
 $chartLabels    = json_encode(array_column($trendData, 'label'));
-$chartPenerimaan= json_encode(array_column($trendData, 'penerimaan'));
-$chartPengurangan=json_encode(array_column($trendData, 'pengurangan'));
+$chartPenerimaan = json_encode(array_column($trendData, 'penerimaan'));
+$chartPengurangan = json_encode(array_column($trendData, 'pengurangan'));
 
 // ---- Distribusi per bagian ----
 $distribusi = $conn->query("
@@ -32,10 +32,11 @@ $distribusi = $conn->query("
     LEFT JOIN stok_current sc ON sc.id_bagian = b.id
     GROUP BY b.id ORDER BY total_stok DESC
 ");
-$distLabels = []; $distData = [];
+$distLabels = [];
+$distData = [];
 while ($row = $distribusi->fetch_assoc()) {
-    $distLabels[] = $row['nama'];
-    $distData[]   = (int)$row['total_stok'];
+  $distLabels[] = $row['nama'];
+  $distData[]   = (int)$row['total_stok'];
 }
 
 // ---- Transaksi terbaru ----
@@ -62,7 +63,8 @@ include BASE_PATH . '/includes/sidebar.php';
   <div class="page-content">
 
     <!-- Flash Message -->
-    <?php $flash = getFlash(); if ($flash): ?>
+    <?php $flash = getFlash();
+    if ($flash): ?>
       <div class="alert alert-<?= $flash['type'] === 'error' ? 'danger' : $flash['type'] ?> auto-dismiss alert-dismissible fade show">
         <?= htmlspecialchars($flash['message']) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -70,19 +72,29 @@ include BASE_PATH . '/includes/sidebar.php';
     <?php endif; ?>
 
     <style>
-      a.stat-card-link { text-decoration: none; display: block; }
-      a.stat-card-link .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-      a.stat-card-link:hover .stat-card { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+      a.stat-card-link {
+        text-decoration: none;
+        display: block;
+      }
+
+      a.stat-card-link .stat-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      a.stat-card-link:hover .stat-card {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
     </style>
 
     <!-- Stat Cards -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-xl-3">
-        <a href="<?= BASE_URL ?>/master_data/barang/index.php" class="stat-card-link">
+        <a href="<?= BASE_URL ?>/laporan/stock_opname_detail.php" class="stat-card-link">
           <div class="stat-card blue">
-            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-archive text-white"></i></div>
-            <div class="stat-value"><?= number_format($totalBarang) ?></div>
-            <div class="stat-label">Total Jenis Barang</div>
+            <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-seam text-white"></i></div>
+            <div class="stat-value"><?= number_format($totalStok) ?></div>
+            <div class="stat-label">Total Stok Aktif</div>
           </div>
         </a>
       </div>
@@ -149,33 +161,39 @@ include BASE_PATH . '/includes/sidebar.php';
         <table class="table" id="recentTable">
           <thead>
             <tr>
-              <th>Jenis</th><th>No. Dokumen</th><th>Nama Barang</th><th>Jumlah</th><th>Bagian</th><th>Tanggal</th><th>Status</th>
+              <th>Jenis</th>
+              <th>No. Dokumen</th>
+              <th>Nama Barang</th>
+              <th>Jumlah</th>
+              <th>Bagian</th>
+              <th>Tanggal</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <?php while ($tx = $recentTx->fetch_assoc()): ?>
-            <tr>
-              <td>
-                <span class="badge <?= $tx['jenis'] === 'Penerimaan' ? 'bg-success' : 'bg-warning text-dark' ?>">
-                  <?= $tx['jenis'] ?>
-                </span>
-              </td>
-              <td><code><?= htmlspecialchars($tx['no_doc']) ?></code></td>
-              <td><?= htmlspecialchars($tx['nama_barang']) ?></td>
-              <td><?= number_format($tx['jumlah']) ?></td>
-              <td><?= htmlspecialchars($tx['bagian']) ?></td>
-              <td><?= formatTanggal($tx['tanggal']) ?></td>
-              <td>
-                <?php
-                $sc = ['pending'=>'badge-pending','disetujui'=>'badge-approved','ditolak'=>'badge-rejected'];
-                $si = ['pending'=>'bi-clock','disetujui'=>'bi-check-circle','ditolak'=>'bi-x-circle'];
-                ?>
-                <span class="badge-sipeba <?= $sc[$tx['status']] ?? '' ?>">
-                  <i class="bi <?= $si[$tx['status']] ?? '' ?>"></i>
-                  <?= ucfirst($tx['status']) ?>
-                </span>
-              </td>
-            </tr>
+              <tr>
+                <td>
+                  <span class="badge <?= $tx['jenis'] === 'Penerimaan' ? 'bg-success' : 'bg-warning text-dark' ?>">
+                    <?= $tx['jenis'] ?>
+                  </span>
+                </td>
+                <td><code><?= htmlspecialchars($tx['no_doc']) ?></code></td>
+                <td><?= htmlspecialchars($tx['nama_barang']) ?></td>
+                <td><?= number_format($tx['jumlah']) ?></td>
+                <td><?= htmlspecialchars($tx['bagian']) ?></td>
+                <td><?= formatTanggal($tx['tanggal']) ?></td>
+                <td>
+                  <?php
+                  $sc = ['pending' => 'badge-pending', 'disetujui' => 'badge-approved', 'ditolak' => 'badge-rejected'];
+                  $si = ['pending' => 'bi-clock', 'disetujui' => 'bi-check-circle', 'ditolak' => 'bi-x-circle'];
+                  ?>
+                  <span class="badge-sipeba <?= $sc[$tx['status']] ?? '' ?>">
+                    <i class="bi <?= $si[$tx['status']] ?? '' ?>"></i>
+                    <?= ucfirst($tx['status']) ?>
+                  </span>
+                </td>
+              </tr>
             <?php endwhile; ?>
           </tbody>
         </table>

@@ -266,7 +266,22 @@ include BASE_PATH . '/includes/sidebar.php';
       <div class="card-body py-3">
         <form method="GET" class="row g-2 align-items-end">
           <input type="hidden" name="id_jenis" value="<?= $id_jenis ?>">
-          <input type="hidden" name="id_bagian" value="<?= $f_bagian ?>">
+          <?php if ($role === 'superadmin'): ?>
+            <div class="col-md-3">
+              <label class="form-label mb-1 small fw-semibold">Bagian</label>
+              <select name="id_bagian" class="form-select form-select-sm">
+                <option value="0" <?= $f_bagian == 0 ? 'selected' : '' ?>>Semua Bagian</option>
+                <?php
+                $bagianList = $conn->query("SELECT * FROM bagian ORDER BY nama");
+                while ($bg = $bagianList->fetch_assoc()):
+                ?>
+                  <option value="<?= $bg['id'] ?>" <?= $f_bagian == $bg['id'] ? 'selected' : '' ?>><?= htmlspecialchars($bg['nama']) ?></option>
+                <?php endwhile; ?>
+              </select>
+            </div>
+          <?php else: ?>
+            <input type="hidden" name="id_bagian" value="<?= $f_bagian ?>">
+          <?php endif; ?>
           <div class="col-auto">
             <label class="form-label mb-1 small fw-semibold">Tahun</label>
             <select name="tahun" class="form-select form-select-sm">
