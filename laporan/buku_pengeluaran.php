@@ -62,27 +62,28 @@ $labelBagianLaporan = preg_match('/^Bagian\s+/i', (string)$namaBagianLaporan)
   ? $namaBagianLaporan
   : 'Bagian ' . $namaBagianLaporan;
 
+// Fungsi split kode menjadi 7 segment: 1,1,1,2,2,2,2
+if (!function_exists('splitKode')) {
+  function splitKode($kode) {
+    $raw = str_replace('.', '', $kode);
+    return [
+      substr($raw, 0, 1),
+      substr($raw, 1, 1),
+      substr($raw, 2, 1),
+      substr($raw, 3, 2),
+      substr($raw, 5, 2),
+      substr($raw, 7, 2),
+      substr($raw, 9),    // semua digit sisa
+    ];
+  }
+}
+
 // Export Excel
 if (isset($_GET['export'])) {
   header('Content-Type: application/vnd.ms-excel; charset=utf-8');
   header('Content-Disposition: attachment; filename="buku_pengeluaran_' . date('Ymd') . '.xls"');
   header('Pragma: no-cache');
   echo "\xEF\xBB\xBF";
-
-  if (!function_exists('splitKode')) {
-    function splitKode($kode) {
-      $raw = str_replace('.', '', $kode);
-      return [
-        substr($raw, 0, 1),
-        substr($raw, 1, 1),
-        substr($raw, 2, 1),
-        substr($raw, 3, 2),
-        substr($raw, 5, 2),
-        substr($raw, 7, 2),
-        substr($raw, 9),    // semua digit sisa
-      ];
-    }
-  }
 
   // Sort data for grouping
   $exportData = [];
@@ -242,7 +243,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th rowspan="2">NO</th>
               <th rowspan="2">TANGGAL PENGELUARAN BARANG</th>
               <th colspan="2" rowspan="2">JENIS/NAMA BARANG</th>
-              <th rowspan="2">KODE BARANG</th>
+              <th colspan="7" rowspan="2">KODE BARANG</th>
               <th rowspan="2">NOMOR</th>
               <th rowspan="2">BANYAKNYA</th>
               <th rowspan="2">SATUAN</th>
@@ -281,8 +282,10 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td></td>
                   <td class="text-center"></td>
                   <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-                  <td class="text-center"><?= htmlspecialchars($r['kode_jenis'] ?? '') ?></td>
-                  <td colspan="6"></td>
+                  <?php $kode_j = splitKode($r['kode_jenis']); foreach ($kode_j as $kj): ?>
+                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kj) ?></td>
+                  <?php endforeach; ?>
+                  <td colspan="5"></td>
                 </tr>
               <?php endif; ?>
               <tr>
@@ -290,7 +293,9 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td><?= formatTanggal($r['tanggal']) ?></td>
                 <td class="text-center">-</td>
                 <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-                <td class="text-center"><?= htmlspecialchars($r['kode_barang']) ?></td>
+                <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
+                  <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
+                <?php endforeach; ?>
                 <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
                 <td class="text-center"><?= number_format($r['jumlah_dipotong']) ?></td>
                 <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
@@ -301,14 +306,14 @@ include BASE_PATH . '/includes/sidebar.php';
             <?php endforeach;
             if (!$found): ?>
               <tr>
-                <td colspan="11" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data pengeluaran.</td>
+                <td colspan="17" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data pengeluaran.</td>
               </tr>
             <?php endif; ?>
           </tbody>
           <?php if ($found): ?>
             <tfoot>
               <tr class="table-secondary fw-bold">
-                <td colspan="6" class="text-end">JUMLAH</td>
+                <td colspan="12" class="text-end">JUMLAH</td>
                 <td class="text-center"><?= number_format($totalQty) ?></td>
                 <td colspan="2"></td>
                 <td class="text-end text-danger"><?= formatRupiah($totalNilai) ?></td>

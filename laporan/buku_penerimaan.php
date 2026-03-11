@@ -55,14 +55,8 @@ $labelBagianLaporan = preg_match('/^Bagian\s+/i', (string)$namaBagianLaporan)
   ? $namaBagianLaporan
   : 'Bagian ' . $namaBagianLaporan;
 
-// Export Excel handler
-if (isset($_GET['export'])) {
-  header('Content-Type: application/vnd.ms-excel; charset=utf-8');
-  header('Content-Disposition: attachment; filename="buku_penerimaan_' . date('Ymd') . '.xls"');
-  header('Pragma: no-cache');
-  echo "\xEF\xBB\xBF"; // BOM UTF-8
-
-  // Fungsi split kode menjadi 7 segment: 1,1,1,2,2,2,2
+// Fungsi split kode menjadi 7 segment: 1,1,1,2,2,2,2
+if (!function_exists('splitKode')) {
   function splitKode($kode) {
     $raw = str_replace('.', '', $kode);
     return [
@@ -75,6 +69,14 @@ if (isset($_GET['export'])) {
       substr($raw, 9),    // semua digit sisa
     ];
   }
+}
+
+// Export Excel handler
+if (isset($_GET['export'])) {
+  header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+  header('Content-Disposition: attachment; filename="buku_penerimaan_' . date('Ymd') . '.xls"');
+  header('Pragma: no-cache');
+  echo "\xEF\xBB\xBF"; // BOM UTF-8
 
   // Sort data for grouping by Jenis Barang
   $exportData = [];
@@ -241,7 +243,7 @@ include BASE_PATH . '/includes/sidebar.php';
             <tr>
               <th rowspan="2">NO</th>
               <th colspan="2" rowspan="2">JENIS/BARANG YANG DIBELI</th>
-              <th rowspan="2">KODE BARANG</th>
+              <th colspan="7" rowspan="2">KODE BARANG</th>
               <th rowspan="2">DARI</th>
               <th colspan="2">DOKUMEN FAKTUR</th>
               <th rowspan="2">BANYAKNYA</th>
@@ -270,7 +272,7 @@ include BASE_PATH . '/includes/sidebar.php';
 
             if (empty($htmlData)): ?>
               <tr>
-                <td colspan="20" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data untuk filter yang dipilih.</td>
+                <td colspan="18" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data untuk filter yang dipilih.</td>
               </tr>
               <?php else:
               $jenis_no = 1;
@@ -284,14 +286,14 @@ include BASE_PATH . '/includes/sidebar.php';
 
                 if ($current_jenis !== $r['kode_jenis']):
                   $current_jenis = $r['kode_jenis'];
-                  $kode_j = explode('.', $r['kode_jenis']);
-                  $kode_j = array_pad($kode_j, 7, '');
               ?>
                   <tr class="table-light fw-bold">
                     <td class="text-center"><?= $jenis_no++ ?></td>
                     <td class="text-end"></td>
                     <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($r['kode_jenis']) ?></td>
+                    <?php $kode_j = splitKode($r['kode_jenis']); foreach ($kode_j as $kj): ?>
+                      <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kj) ?></td>
+                    <?php endforeach; ?>
                     <td colspan="8"></td>
                   </tr>
                 <?php endif; ?>
@@ -299,7 +301,9 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td></td>
                   <td class="text-center">-</td>
                   <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-                  <td class="text-center"><?= htmlspecialchars($r['kode_barang']) ?></td>
+                  <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
+                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
+                  <?php endforeach; ?>
                   <td><?= htmlspecialchars($r['dari'] ?? '') ?></td>
                   <td><?= htmlspecialchars($r['no_faktur']) ?></td>
                   <td><?= formatTanggal($r['tanggal']) ?></td>
@@ -315,7 +319,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <?php if (!empty($htmlData)): ?>
             <tfoot class="table-secondary fw-bold">
               <tr>
-                <td colspan="7" class="text-end">JUMLAH</td>
+                <td colspan="13" class="text-end">JUMLAH</td>
                 <td class="text-center"><?= number_format($totalQty, 0, ',', '.') ?></td>
                 <td></td>
                 <td></td>

@@ -209,7 +209,7 @@ if (isset($_GET['export'])) {
         $kj_raw = $rows[0]['kode_jenis'];
         if (strpos($kj_raw, '.') !== false) {
           $kj_parts = explode('.', $kj_raw);
-        } elseif (strlen($kj_raw) == 9) {
+        } elseif (strlen($kj_raw) >= 9) {
           $kj_parts = [substr($kj_raw, 0, 1), substr($kj_raw, 1, 1), substr($kj_raw, 2, 1), substr($kj_raw, 3, 2), substr($kj_raw, 5, 2), substr($kj_raw, 7, 2)];
         } else {
           $kj_parts = [$kj_raw];
@@ -242,7 +242,7 @@ if (isset($_GET['export'])) {
           $kode_raw = $r['kode_barang'];
           if (strpos($kode_raw, '.') !== false) {
             $kode_parts = explode('.', $kode_raw);
-          } elseif (strlen($kode_raw) >= 11) {
+          } elseif (strlen($kode_raw) >= 9) {
             $kode_parts = [
               substr($kode_raw, 0, 1),
               substr($kode_raw, 1, 1),
@@ -421,7 +421,7 @@ include BASE_PATH . '/includes/sidebar.php';
               $kj_raw = $rows[0]['kode_jenis'];
               if (strpos($kj_raw, '.') !== false) {
                 $kj_parts = explode('.', $kj_raw);
-              } elseif (strlen($kj_raw) == 9) {
+              } elseif (strlen($kj_raw) >= 9) {
                 $kj_parts = [substr($kj_raw, 0, 1), substr($kj_raw, 1, 1), substr($kj_raw, 2, 1), substr($kj_raw, 3, 2), substr($kj_raw, 5, 2), substr($kj_raw, 7, 2)];
               } else {
                 $kj_parts = [$kj_raw];
@@ -450,7 +450,7 @@ include BASE_PATH . '/includes/sidebar.php';
                 $kode_raw = $r['kode_barang'];
                 if (strpos($kode_raw, '.') !== false) {
                   $kode_parts = explode('.', $kode_raw);
-                } elseif (strlen($kode_raw) >= 11) {
+                } elseif (strlen($kode_raw) >= 9) {
                   $kode_parts = [
                     substr($kode_raw, 0, 1),
                     substr($kode_raw, 1, 1),
