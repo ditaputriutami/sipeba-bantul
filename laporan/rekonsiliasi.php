@@ -167,83 +167,71 @@ if (isset($_GET['export'])) {
   $periodeLabel = date('d-m-Y', strtotime($f_dari)) . '_sd_' . date('d-m-Y', strtotime($f_sampai));
   header('Content-Type: application/vnd.ms-excel; charset=utf-8');
   header('Content-Disposition: attachment; filename="rekonsiliasi_' . $periodeLabel . '.xls"');
+  header('Pragma: no-cache');
   echo "\xEF\xBB\xBF";
-
-  // Header
-  echo "<table border='1' cellpadding='10' cellspacing='0' style='border-collapse: collapse; width: 100%; font-family: Calibri; font-size: 11pt;'>";
-
-  // Judul Utama
-  echo "<tr>";
-  echo "<td colspan='5' align='center' style='font-size: 14pt; font-weight: bold; padding: 15px; border: none;'>BERITA ACARA REKONSILIASI</td>";
-  echo "</tr>";
-
-  // Bagian
-  echo "<tr>";
-  echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>" . strtoupper($namaBagianTerpilih) . "</td>";
-  echo "</tr>";
-
-  // Periode
-  echo "<tr>";
-  echo "<td colspan='5' align='center' style='font-size: 12pt; font-weight: bold; padding: 10px; border: none;'>PERIODE " . date('d/m/Y', strtotime($f_dari)) . " s.d. " . date('d/m/Y', strtotime($f_sampai)) . "</td>";
-  echo "</tr>";
-
-  // Spasi
-  echo "<tr>";
-  echo "<td colspan='5' style='border: none; padding: 3px;'></td>";
-  echo "</tr>";
-
-  // Column Headers
-  echo "<tr style='font-weight: bold; font-size: 11pt;'>";
-  echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 8%; background-color: #cccccc;'>NO.</td>";
-  echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 35%; background-color: #cccccc;'>URAIAN</td>";
-  echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>PENERIMAAN</td>";
-  echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>PENGURANGAN</td>";
-  echo "<td align='center' style='border: 1px solid #000; padding: 10px; width: 19%; background-color: #cccccc;'>SALDO AKHIR</td>";
-  echo "</tr>";
-
-  // Data rows
+?>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:11pt;">
+  <tr>
+    <td colspan="5" align="center" style="font-size:14pt; font-weight:bold; border:none; padding:15px;">BERITA ACARA REKONSILIASI</td>
+  </tr>
+  <tr>
+    <td colspan="5" align="center" style="font-size:12pt; font-weight:bold; border:none; padding:8px;"><?= strtoupper($namaBagianTerpilih) ?></td>
+  </tr>
+  <tr>
+    <td colspan="5" align="center" style="font-size:12pt; font-weight:bold; border:none; padding:8px;">PERIODE <?= date('d/m/Y', strtotime($f_dari)) ?> s.d. <?= date('d/m/Y', strtotime($f_sampai)) ?></td>
+  </tr>
+  <tr>
+    <td colspan="5" style="border:none; padding:3px;"></td>
+  </tr>
+  <tr style="font-weight:bold; background-color:#cccccc;">
+    <td align="center" style="border:1px solid #000; padding:10px; width:8%;">NO.</td>
+    <td align="center" style="border:1px solid #000; padding:10px; width:35%;">URAIAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">PENERIMAAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">PENGURANGAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">SALDO AKHIR</td>
+  </tr>
+<?php
   if (empty($dataByJenis)) {
-    echo "<tr>";
-    echo "<td colspan='5' align='center' style='border: 1px solid #000; padding: 15px; font-size: 11pt;'>Tidak ada transaksi pada periode " . date('d/m/Y', strtotime($f_dari)) . " s.d. " . date('d/m/Y', strtotime($f_sampai)) . "</td>";
-    echo "</tr>";
+    echo "<tr><td colspan='5' align='center' style='border:1px solid #000; padding:15px;'>Tidak ada transaksi pada periode " . date('d/m/Y', strtotime($f_dari)) . " s.d. " . date('d/m/Y', strtotime($f_sampai)) . "</td></tr>";
   } else {
     $no = 1;
     $total_penerimaan = 0;
     $total_pengurangan = 0;
     $total_saldo = 0;
     foreach ($dataByJenis as $jenis) {
-      // Baris Jenis Barang (header)
-      echo "<tr style='font-weight: bold; font-size: 11pt;'>";
-      echo "<td align='center' style='border: 1px solid #000; padding: 10px; background-color: #e8e8e8;'>{$no}</td>";
-      echo "<td colspan='4' style='border: 1px solid #000; padding: 10px; background-color: #e8e8e8;'>" . strtoupper($jenis['nama_jenis']) . "</td>";
-      echo "</tr>";
-      $no++;
-
-      // Baris Nama Barang
+?>
+  <tr style="font-weight:bold; background-color:#e8e8e8;">
+    <td align="center" style="border:1px solid #000; padding:10px;"><?= $no++ ?></td>
+    <td colspan="4" style="border:1px solid #000; padding:10px;"><?= strtoupper(htmlspecialchars($jenis['nama_jenis'])) ?></td>
+  </tr>
+<?php
       foreach ($jenis['barang'] as $brg) {
         $total_penerimaan += $brg['penerimaan'];
         $total_pengurangan += $brg['pengurangan'];
         $total_saldo += $brg['saldo_akhir'];
-        echo "<tr style='font-size: 11pt;'>";
-        echo "<td style='border: 1px solid #000; padding: 8px;'></td>"; // Kolom NO. kosong
-        echo "<td style='border: 1px solid #000; padding: 8px; text-align: left;'>" . htmlspecialchars($brg['nama_barang']) . "</td>";
-        echo "<td style='border: 1px solid #000; padding: 8px; text-align: right;'>" . number_format($brg['penerimaan'], 0, ',', '.') . "</td>";
-        echo "<td style='border: 1px solid #000; padding: 8px; text-align: right;'>" . number_format($brg['pengurangan'], 0, ',', '.') . "</td>";
-        echo "<td style='border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;'>" . number_format($brg['saldo_akhir'], 0, ',', '.') . "</td>";
-        echo "</tr>";
+?>
+  <tr>
+    <td style="border:1px solid #000; padding:8px;"></td>
+    <td style="border:1px solid #000; padding:8px; padding-left:20px;"><?= htmlspecialchars($brg['nama_barang']) ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$brg['penerimaan'] ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$brg['pengurangan'] ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold; mso-number-format:'#,##0';" x:num><?= (int)$brg['saldo_akhir'] ?></td>
+  </tr>
+<?php
       }
     }
-
-    // Footer JUMLAH
-    echo "<tr style='font-weight: bold; background-color: #e9ecef; font-size: 11pt;'>";
-    echo "<td colspan='2' align='center' style='border: 1px solid #000; padding: 10px;'>JUMLAH</td>";
-    echo "<td style='border: 1px solid #000; padding: 8px; text-align: right;'>" . number_format($total_penerimaan, 0, ',', '.') . "</td>";
-    echo "<td style='border: 1px solid #000; padding: 8px; text-align: right;'>" . number_format($total_pengurangan, 0, ',', '.') . "</td>";
-    echo "<td style='border: 1px solid #000; padding: 8px; text-align: right;'>" . number_format($total_saldo, 0, ',', '.') . "</td>";
-    echo "</tr>";
+?>
+  <tr style="font-weight:bold; background-color:#e9ecef;">
+    <td colspan="2" align="center" style="border:1px solid #000; padding:10px;">JUMLAH</td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_penerimaan ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_pengurangan ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_saldo ?></td>
+  </tr>
+<?php
   }
-
-  echo "</table>";
+?>
+</table>
+<?php
   exit;
 }
 
@@ -393,19 +381,6 @@ include BASE_PATH . '/includes/sidebar.php';
             <?php endif; ?>
           </tbody>
         </table>
-      </div>
-
-      <!-- Footer Info -->
-      <div class="card-footer text-muted" style="font-size: 0.85rem;">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <i class="bi bi-info-circle me-1"></i>
-            Laporan ini menampilkan transaksi yang telah disetujui pada periode terpilih
-          </div>
-          <div class="text-end">
-            <strong>Tanggal Cetak:</strong> <?= date('d-m-Y H:i') ?> WIB
-          </div>
-        </div>
       </div>
     </div>
 

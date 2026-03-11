@@ -7,7 +7,29 @@
  */
 require_once __DIR__ . '/../config/bootstrap.php';
 requireLogin();
-$pageTitle = 'Summary Hasil Stock Opname';
+
+// Helper function untuk format tanggal Indonesia
+function formatTanggalIndo($tanggal)
+{
+  $bulan_indo = [
+    1 => 'Januari',
+    2 => 'Februari',
+    3 => 'Maret',
+    4 => 'April',
+    5 => 'Mei',
+    6 => 'Juni',
+    7 => 'Juli',
+    8 => 'Agustus',
+    9 => 'September',
+    10 => 'Oktober',
+    11 => 'November',
+    12 => 'Desember'
+  ];
+  $ts = strtotime($tanggal);
+  return date('d', $ts) . ' ' . $bulan_indo[(int)date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
+$pageTitle = 'Hasil Stock Opname';
 $user = getCurrentUser();
 $role = getUserRole();
 $id_bagian = getUserBagian();
@@ -170,7 +192,7 @@ $periode_text = $use_date_filter
   ? date('d/m/Y', strtotime($f_dari_tanggal)) . ' - ' . date('d/m/Y', strtotime($f_sampai_tanggal))
   : '31 Desember ' . $f_tahun;
 $periode_text_upper = $use_date_filter
-  ? strtoupper(date('d F Y', strtotime($f_dari_tanggal))) . ' - ' . strtoupper(date('d F Y', strtotime($f_sampai_tanggal)))
+  ? strtoupper(formatTanggalIndo($f_dari_tanggal)) . ' - ' . strtoupper(formatTanggalIndo($f_sampai_tanggal))
   : '31 DESEMBER ' . $f_tahun;
 
 // Export Excel

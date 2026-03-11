@@ -69,88 +69,112 @@ if (isset($_GET['export'])) {
   header('Pragma: no-cache');
   echo "\xEF\xBB\xBF";
 
+  if (!function_exists('splitKode')) {
+    function splitKode($kode) {
+      $raw = str_replace('.', '', $kode);
+      return [
+        substr($raw, 0, 1),
+        substr($raw, 1, 1),
+        substr($raw, 2, 1),
+        substr($raw, 3, 2),
+        substr($raw, 5, 2),
+        substr($raw, 7, 2),
+        substr($raw, 9),    // semua digit sisa
+      ];
+    }
+  }
+
   // Sort data for grouping
   $exportData = [];
+  $totalNilai = 0;
+  $totalQty = 0;
   $data->data_seek(0);
-  while ($r = $data->fetch_assoc()) $exportData[] = $r;
+  while ($r = $data->fetch_assoc()) {
+    $exportData[] = $r;
+    $totalNilai += $r['total_nilai_batch'];
+    $totalQty += $r['jumlah_dipotong'];
+  }
   usort($exportData, function ($a, $b) {
     if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
     return strcmp($a['kode_jenis'], $b['kode_jenis']);
   });
 ?>
-  <table border="1" cellpadding="3" cellspacing="0">
+  <table border="1" cellpadding="3" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:10pt;">
     <thead>
       <tr>
-        <th colspan="11" style="text-align:center; font-size:14pt; font-weight:bold; border:none;">BUKU PENGELUARAN BARANG PERSEDIAAN</th>
+        <th colspan="17" style="text-align:center; font-size:14pt; font-weight:bold; border:none;">BUKU PENGELUARAN BARANG PERSEDIAAN</th>
       </tr>
       <tr>
-        <th colspan="11" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
+        <th colspan="17" style="text-align:center; font-size:11pt; font-weight:bold; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></th>
       </tr>
       <tr>
-        <th colspan="11" style="text-align:center; font-size:11pt; border:none;">Periode: <?= $f_dari ?> s.d. <?= $f_sampai ?></th>
+        <th colspan="17" style="text-align:center; font-size:11pt; border:none;">Periode: <?= date('d/m/Y', strtotime($f_dari)) ?> s.d. <?= date('d/m/Y', strtotime($f_sampai)) ?></th>
       </tr>
+      <tr><th colspan="17" style="border:none;"></th></tr>
       <tr>
-        <th colspan="11" style="border:none;"></th>
-      </tr>
-      <tr>
-        <th rowspan="2">NO</th>
-        <th rowspan="2">TANGGAL PENGELUARAN BARANG</th>
-        <th colspan="2" rowspan="2">JENIS/NAMA BARANG</th>
-        <th rowspan="2">KODE BARANG</th>
-        <th rowspan="2">NOMOR</th>
-        <th rowspan="2">BANYAKNYA</th>
-        <th rowspan="2">SATUAN</th>
-        <th rowspan="2">HARGA SATUAN (RP)</th>
-        <th rowspan="2">JUMLAH HARGA (RP)</th>
-        <th rowspan="2">KETERANGAN</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">NO</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">TANGGAL PENGELUARAN BARANG</th>
+        <th colspan="2" rowspan="2" style="text-align:center; vertical-align:middle;">JENIS/NAMA BARANG</th>
+        <th colspan="7" rowspan="2" style="text-align:center; vertical-align:middle;">KODE BARANG</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">NOMOR</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">BANYAKNYA</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">SATUAN</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">HARGA SATUAN (Rp)</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">JUMLAH HARGA (Rp)</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">KETERANGAN</th>
       </tr>
       <tr></tr>
       <tr>
-        <?php for ($i = 1; $i <= 11; $i++) echo "<th style='text-align:center;'>$i</th>"; ?>
+        <?php for ($i = 1; $i <= 17; $i++) echo "<th style='text-align:center;'>$i</th>"; ?>
       </tr>
     </thead>
     <tbody>
       <?php
       $jenis_no = 1;
       $current_jenis = null;
-      $totalNilai = 0;
-      $totalQty = 0;
       foreach ($exportData as $r) {
-        $totalNilai += $r['total_nilai_batch'];
-        $totalQty += $r['jumlah_dipotong'];
         if ($current_jenis !== $r['kode_jenis']) {
           $current_jenis = $r['kode_jenis'];
+          $kode_j = splitKode($r['kode_jenis']);
       ?>
           <tr style="font-weight:bold; background-color:#f8f9fa;">
             <td style="text-align:center;"><?= $jenis_no++ ?></td>
             <td></td>
             <td></td>
             <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-            <td style="mso-number-format:'\@'; text-align:center;"><?= htmlspecialchars($r['kode_jenis'] ?? '') ?></td>
-            <td colspan="6"></td>
+            <?php foreach ($kode_j as $kj): ?>
+              <td style="text-align:center; font-weight:bold; mso-number-format:'\@';" x:str><?= htmlspecialchars($kj) ?></td>
+            <?php endforeach; ?>
+            <td colspan="5"></td>
           </tr>
-        <?php } ?>
+        <?php
+        }
+        $kode_b = splitKode($r['kode_barang']);
+        ?>
         <tr>
           <td></td>
-          <td style="mso-number-format:'yyyy\-mm\-dd';"><?= htmlspecialchars($r['tanggal']) ?></td>
+          <td><?= htmlspecialchars($r['tanggal']) ?></td>
           <td style="text-align:center;">-</td>
           <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-          <td style="mso-number-format:'\@'; text-align:center;"><?= htmlspecialchars($r['kode_barang']) ?></td>
+          <?php foreach ($kode_b as $kb): ?>
+            <td style="text-align:center; mso-number-format:'\@';" x:str><?= htmlspecialchars($kb) ?></td>
+          <?php endforeach; ?>
           <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
-          <td style="text-align:center;"><?= number_format($r['jumlah_dipotong'], 0, '', '') ?></td>
+          <td style="text-align:center;" x:num><?= (int)$r['jumlah_dipotong'] ?></td>
           <td><?= htmlspecialchars($r['satuan']) ?></td>
-          <td style="text-align:right;"><?= number_format($r['harga_satuan'], 0, '', '') ?></td>
-          <td style="text-align:right;"><?= number_format($r['total_nilai_batch'], 0, '', '') ?></td>
+          <td style="text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$r['harga_satuan'] ?></td>
+          <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0';" x:num><?= (int)$r['total_nilai_batch'] ?></td>
           <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
         </tr>
       <?php } ?>
     </tbody>
     <tfoot>
       <tr style="font-weight:bold; background-color:#e9ecef;">
-        <td colspan="6" style="text-align:right;">JUMLAH</td>
-        <td style="text-align:center;"><?= number_format($totalQty, 0, '', '') ?></td>
-        <td colspan="2"></td>
-        <td style="text-align:right;"><?= number_format($totalNilai, 0, '', '') ?></td>
+        <td colspan="12" style="text-align:right;">JUMLAH</td>
+        <td style="text-align:center;" x:num><?= (int)$totalQty ?></td>
+        <td></td>
+        <td></td>
+        <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0';" x:num><?= (int)$totalNilai ?></td>
         <td></td>
       </tr>
     </tfoot>
@@ -165,7 +189,7 @@ include BASE_PATH . '/includes/sidebar.php';
 <div class="main-content">
   <div class="topbar">
     <button class="sidebar-toggle-btn me-3" id="mainSidebarToggle"><i class="bi bi-list fs-4"></i></button>
-    <div class="topbar-title"><i class="bi bi-journal-minus me-2"></i>Buku Pengeluaran Barang — Lampiran X</div>
+    <div class="topbar-title"><i class="bi bi-journal-minus me-2"></i>Buku Pengeluaran Barang</div>
   </div>
   <div class="page-content">
     <div class="card mb-3">
@@ -209,7 +233,7 @@ include BASE_PATH . '/includes/sidebar.php';
       <div class="card-header text-center">
         <div class="fw-bold">BUKU PENGELUARAN BARANG PERSEDIAAN</div>
         <div class="fw-semibold" style="font-size:1rem"><?= htmlspecialchars($labelBagianLaporan) ?></div>
-        <div class="text-muted" style="font-size:.85rem">Periode: <?= formatTanggal($f_dari) ?> s.d. <?= formatTanggal($f_sampai) ?></div>
+        <div class="text-muted" style="font-size:.85rem">Periode: <?= date('d/m/Y', strtotime($f_dari)) ?> s.d. <?= date('d/m/Y', strtotime($f_sampai)) ?></div>
       </div>
       <div class="table-wrapper">
         <table class="table table-bordered table-sm align-middle" style="font-size:.82rem; white-space:nowrap;">
