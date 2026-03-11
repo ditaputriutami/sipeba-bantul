@@ -62,6 +62,7 @@ $where_bagian_p = $f_bagian ? " AND p.id_bagian=$f_bagian" : "";
 $where_bagian_p2 = $f_bagian ? " AND p2.id_bagian=$f_bagian" : "";
 $where_bagian_pr = $f_bagian ? " AND pr.id_bagian=$f_bagian" : "";
 $where_jenis = $id_jenis ? " AND b.id_jenis_barang = $id_jenis" : "";
+$where_jenis_master = $id_jenis ? " WHERE j.id = $id_jenis" : "";
 
 $kondisi_penerimaan_sampai = $use_date_filter
   ? "p.tanggal <= '$f_sampai_tanggal'"
@@ -160,16 +161,37 @@ $query = "
         $where_jenis
     GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis
     HAVING jumlah > 0
-    ORDER BY j.kode_jenis ASC, b.nama_barang ASC
+    ORDER BY j.kode_jenis ASC, b.kode_barang ASC, b.nama_barang ASC
 ";
 
 $data = $conn->query($query);
 
-// Helper untuk grouping
+// Helper untuk grouping (selalu siapkan semua jenis barang)
 $items = [];
 while ($r = $data->fetch_assoc()) {
-  $items[$r['nama_jenis']][] = $r;
+  $kodeJenisKey = (string)$r['kode_jenis'];
+  if (!isset($items[$kodeJenisKey])) {
+    $items[$kodeJenisKey] = [
+      'nama_jenis' => $r['nama_jenis'],
+      'kode_jenis' => $r['kode_jenis'],
+      'rows' => []
+    ];
+  }
+  $items[$kodeJenisKey]['rows'][] = $r;
 }
+
+$jenis_master_q = $conn->query("SELECT j.id, j.nama_jenis, j.kode_jenis FROM jenis_barang j $where_jenis_master ORDER BY j.kode_jenis ASC, j.nama_jenis ASC");
+while ($jm = $jenis_master_q->fetch_assoc()) {
+  $kodeJenisKey = (string)$jm['kode_jenis'];
+  if (!isset($items[$kodeJenisKey])) {
+    $items[$kodeJenisKey] = [
+      'nama_jenis' => $jm['nama_jenis'],
+      'kode_jenis' => $jm['kode_jenis'],
+      'rows' => []
+    ];
+  }
+}
+ksort($items, SORT_NATURAL);
 
 // Export Excel
 if (isset($_GET['export'])) {
@@ -202,11 +224,14 @@ if (isset($_GET['export'])) {
     </thead>
     <tbody>
       <?php
-      $no = 1;
       $grand_total = 0;
       $total_qty = 0;
-      foreach ($items as $nama_jenis => $rows):
-        $kj_raw = $rows[0]['kode_jenis'];
+      $no_jenis_group = 1;
+      foreach ($items as $group):
+        $nama_jenis = $group['nama_jenis'];
+        $rows = $group['rows'];
+        $no_barang = 1;
+        $kj_raw = $group['kode_jenis'];
         if (strpos($kj_raw, '.') !== false) {
           $kj_parts = explode('.', $kj_raw);
         } elseif (strlen($kj_raw) >= 9) {
@@ -223,7 +248,7 @@ if (isset($_GET['export'])) {
         }
       ?>
         <tr style="font-weight:bold; background-color:#f5f5f5;">
-          <td style="border:1px solid #000; padding:5px;"></td>
+          <td align="center" style="border:1px solid #000; padding:5px;"><?= $no_jenis_group ?></td>
           <td style="border:1px solid #000; padding:5px; font-weight:bold; text-transform:uppercase;"><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
           <?php foreach ($kj_parts as $kp): ?>
             <td align="center" style="border:1px solid #000; mso-number-format:'\@'; padding:4px; font-weight:bold;"><?= $kp ?></td>
@@ -264,8 +289,8 @@ if (isset($_GET['export'])) {
           }
         ?>
           <tr>
-            <td align="center" style="border:1px solid #000; padding:5px;"><?= $no++ ?></td>
-            <td style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['nama_barang']) ?></td>
+            <td align="center" style="border:1px solid #000; padding:5px;"><?= $no_jenis_group . '.' . $no_barang++ ?></td>
+            <td style="border:1px solid #000; padding:5px 5px 5px 18px;"><?= htmlspecialchars($r['nama_barang']) ?></td>
             <?php foreach ($kode_parts as $kp): ?>
               <td align="center" style="border:1px solid #000; mso-number-format:'\@'; padding:4px;"><?= $kp ?></td>
             <?php endforeach; ?>
@@ -276,6 +301,7 @@ if (isset($_GET['export'])) {
             <td style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
           </tr>
         <?php endforeach; ?>
+        <?php $no_jenis_group++; ?>
       <?php endforeach; ?>
     </tbody>
     <tfoot>
@@ -414,11 +440,14 @@ include BASE_PATH . '/includes/sidebar.php';
           </thead>
           <tbody>
             <?php
-            $no = 1;
             $grand_total = 0;
             $total_qty = 0;
-            foreach ($items as $nama_jenis => $rows):
-              $kj_raw = $rows[0]['kode_jenis'];
+            $no_jenis_group = 1;
+            foreach ($items as $group):
+              $nama_jenis = $group['nama_jenis'];
+              $rows = $group['rows'];
+              $no_barang = 1;
+              $kj_raw = $group['kode_jenis'];
               if (strpos($kj_raw, '.') !== false) {
                 $kj_parts = explode('.', $kj_raw);
               } elseif (strlen($kj_raw) >= 9) {
@@ -435,7 +464,7 @@ include BASE_PATH . '/includes/sidebar.php';
               }
             ?>
               <tr class="table-secondary fw-bold text-dark">
-                <td></td>
+                <td class="text-center"><?= $no_jenis_group ?></td>
                 <td><?= strtoupper(htmlspecialchars($nama_jenis)) ?></td>
                 <?php foreach ($kj_parts as $kp): ?>
                   <td class="text-center text-nowrap" style="padding: 0 0.1rem;"><?= $kp ?></td>
@@ -472,8 +501,8 @@ include BASE_PATH . '/includes/sidebar.php';
                 }
               ?>
                 <tr class="text-dark">
-                  <td class="text-center"><?= $no++ ?></td>
-                  <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+                  <td class="text-center"><?= $no_jenis_group . '.' . $no_barang++ ?></td>
+                  <td style="padding-left: 1rem;"><?= htmlspecialchars($r['nama_barang']) ?></td>
                   <?php foreach ($kode_parts as $kp): ?>
                     <td class="text-center text-nowrap" style="padding: 0 0.1rem;"><?= $kp ?></td>
                   <?php endforeach; ?>
@@ -484,6 +513,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
                 </tr>
               <?php endforeach; ?>
+              <?php $no_jenis_group++; ?>
             <?php endforeach; ?>
           </tbody>
           <tfoot class="table-secondary fw-bold text-dark">

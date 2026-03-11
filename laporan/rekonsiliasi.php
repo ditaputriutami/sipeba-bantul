@@ -47,6 +47,7 @@ $query = "
     SELECT 
         jb.id as id_jenis,
         jb.nama_jenis,
+    jb.kode_jenis,
         b.id as id_barang,
         b.kode_barang,
         b.nama_barang,
@@ -75,13 +76,23 @@ $query = "
         
     FROM jenis_barang jb
     LEFT JOIN barang b ON b.id_jenis_barang = jb.id
-    ORDER BY jb.nama_jenis, b.nama_barang
+    ORDER BY jb.kode_jenis ASC, b.kode_barang ASC, b.nama_barang ASC
 ";
 
 $result = $conn->query($query);
 
-// Kelompokkan data per jenis -> barang
+// Siapkan semua jenis barang agar tetap tampil walau belum ada transaksi
 $dataByJenis = [];
+$jenisMasterResult = $conn->query("SELECT id, nama_jenis, kode_jenis FROM jenis_barang ORDER BY kode_jenis ASC, nama_jenis ASC");
+while ($jm = $jenisMasterResult->fetch_assoc()) {
+  $dataByJenis[$jm['id']] = [
+    'nama_jenis' => $jm['nama_jenis'],
+    'kode_jenis' => $jm['kode_jenis'],
+    'barang' => []
+  ];
+}
+
+// Kelompokkan data transaksi per jenis -> barang
 while ($row = $result->fetch_assoc()) {
   if (!$row['id_barang']) continue; // Skip jika tidak ada barang
 
@@ -95,10 +106,10 @@ while ($row = $result->fetch_assoc()) {
     continue;
   }
 
-  // Inisialisasi jenis jika belum ada
   if (!isset($dataByJenis[$id_jenis])) {
     $dataByJenis[$id_jenis] = [
       'nama_jenis' => $row['nama_jenis'],
+      'kode_jenis' => $row['kode_jenis'],
       'barang' => []
     ];
   }
@@ -113,10 +124,21 @@ while ($row = $result->fetch_assoc()) {
   ];
 }
 
-// Hapus jenis yang tidak memiliki barang
-$dataByJenis = array_filter($dataByJenis, function ($jenis) {
-  return count($jenis['barang']) > 0;
-});
+// Untuk jenis tanpa transaksi, tetap tampilkan satu baris placeholder bernilai 0
+foreach ($dataByJenis as &$jenis) {
+  if (empty($jenis['barang'])) {
+    $jenis['barang'][] = [
+      'kode_barang' => '',
+      'nama_barang' => '-',
+      'satuan' => '',
+      'penerimaan' => 0,
+      'pengurangan' => 0,
+      'saldo_akhir' => 0,
+      'is_placeholder' => true,
+    ];
+  }
+}
+unset($jenis);
 
 // Ambil nama bagian berdasarkan id_bagian user
 $namaBagianTerpilih = 'Semua Bagian';
