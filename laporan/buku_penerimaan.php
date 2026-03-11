@@ -56,6 +56,8 @@ while ($r = $data->fetch_assoc()) {
   }
 }
 
+$bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
+
 // Nama bagian yang ditampilkan pada header laporan
 $namaBagianLaporan = 'Sekretariat Daerah';
 if ($f_bagian > 0) {
@@ -134,7 +136,7 @@ if (isset($_GET['export'])) {
         <th rowspan="2" style="text-align:center; vertical-align:middle;">SATUAN</th>
         <th rowspan="2" style="text-align:center; vertical-align:middle;">HARGA SATUAN (Rp)</th>
         <th rowspan="2" style="text-align:center; vertical-align:middle;">JUMLAH HARGA (Rp)</th>
-        <th rowspan="2" style="text-align:center; vertical-align:middle;">KETERANGAN</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">SUMBER DANA</th>
       </tr>
       <tr>
         <th style="text-align:center;">NOMOR</th>
@@ -265,9 +267,9 @@ include BASE_PATH . '/includes/sidebar.php';
               <th colspan="2">DOKUMEN FAKTUR</th>
               <th rowspan="2">BANYAKNYA</th>
               <th rowspan="2">SATUAN</th>
-              <th rowspan="2">HARGA SATUAN (Rp)</th>
-              <th rowspan="2">JUMLAH HARGA (Rp)</th>
-              <th rowspan="2">KETERANGAN</th>
+              <th rowspan="2" class="align-middle" style="min-width:120px;">Harga Satuan <br><small>(Rp)</small></th>
+              <th rowspan="2" class="align-middle" style="min-width:130px;">Jumlah Harga <br><small>(Rp)</small></th>
+              <th rowspan="2" class="align-middle" style="min-width:150px;">Sumber Dana</th>
             </tr>
             <tr>
               <th>NOMOR</th>

@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $nama   = sanitize($_POST['nama_barang'] ?? '');
   $satuan = sanitize($_POST['satuan'] ?? '');
   $jenis  = (int)($_POST['id_jenis_barang'] ?? 0);
+  // Superadmin hanya boleh list (Read Only)
+  if ($role === 'superadmin') {
+    setFlash('error', 'Superadmin hanya memiliki akses Read-Only pada Master Barang.');
+    header('Location: index.php');
+    exit;
+  }
 
   if ($action === 'create') {
     $stmt = $conn->prepare("INSERT INTO barang (kode_barang,nama_barang,satuan,id_jenis_barang) VALUES(?,?,?,?)");
@@ -127,9 +133,11 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="card-header d-flex align-items-center justify-content-between">
             <span><i class="bi bi-list-ul me-2"></i>Daftar Barang</span>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-primary btn-sm" id="btnTambahBarang" style="display: <?= $editItem ? 'none' : 'block' ?>">
-                <i class="bi bi-plus-lg me-1"></i>Tambah Barang
-              </button>
+              <?php if ($role !== 'superadmin'): ?>
+                <button type="button" class="btn btn-primary btn-sm" id="btnTambahBarang" style="display: <?= $editItem ? 'none' : 'block' ?>">
+                  <i class="bi bi-plus-lg me-1"></i>Tambah Barang
+                </button>
+              <?php endif; ?>
               <input type="text" class="form-control form-control-sm" style="width:200px" data-table-search="barangTable" placeholder="Cari...">
             </div>
           </div>
@@ -163,11 +171,15 @@ include BASE_PATH . '/includes/sidebar.php';
                       </span>
                     </td>
                     <td>
-                      <a href="?action=edit&id=<?= $b['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
-                      <form method="POST" class="d-inline">
-                        <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $b['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus barang <?= htmlspecialchars($b['nama_barang']) ?>?"><i class="bi bi-trash"></i></button>
-                      </form>
+                      <?php if ($role !== 'superadmin'): ?>
+                        <a href="?action=edit&id=<?= $b['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon"><i class="bi bi-pencil"></i></a>
+                        <form method="POST" class="d-inline">
+                          <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $b['id'] ?>">
+                          <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus barang <?= htmlspecialchars($b['nama_barang']) ?>?"><i class="bi bi-trash"></i></button>
+                        </form>
+                      <?php else: ?>
+                        <span class="text-muted"><i class="bi bi-lock"></i></span>
+                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endwhile; ?>

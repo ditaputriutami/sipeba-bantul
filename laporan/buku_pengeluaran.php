@@ -130,7 +130,7 @@ if (isset($_GET['export'])) {
         <th rowspan="2" style="text-align:center; vertical-align:middle;">SATUAN</th>
         <th rowspan="2" style="text-align:center; vertical-align:middle;">HARGA SATUAN (Rp)</th>
         <th rowspan="2" style="text-align:center; vertical-align:middle;">JUMLAH HARGA (Rp)</th>
-        <th rowspan="2" style="text-align:center; vertical-align:middle;">KETERANGAN</th>
+        <th rowspan="2" style="text-align:center; vertical-align:middle;">SUMBER DANA</th>
       </tr>
       <tr></tr>
       <tr>
@@ -255,7 +255,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th rowspan="2">SATUAN</th>
               <th rowspan="2">HARGA SATUAN (RP)</th>
               <th rowspan="2">JUMLAH HARGA (RP)</th>
-              <th rowspan="2">KETERANGAN</th>
+              <th rowspan="2">SUMBER DANA</th>
             </tr>
             <tr></tr>
           </thead>

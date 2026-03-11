@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus', 'kepala', 'superadmin']);
+requireRole(['pengurus', 'kepala']);
 $pageTitle = 'Tambah Pengurangan Barang';
 $user = getCurrentUser();
 $role = getUserRole();
@@ -144,8 +144,8 @@ include BASE_PATH . '/includes/sidebar.php';
               <small class="text-muted" id="hargaNote">Total nilai pengurangan</small>
             </div>
             <div class="col-12">
-              <label class="form-label">Keterangan</label>
-              <textarea name="keterangan" class="form-control" rows="2" placeholder="Tujuan penggunaan barang (opsional)"></textarea>
+              <label class="form-label">Sumber Dana</label>
+              <textarea name="keterangan" class="form-control" rows="2" placeholder="Sumber dana pembelian barang persediaan (opsional)"></textarea>
             </div>
           </div>
           <div class="mt-4 d-flex gap-2">

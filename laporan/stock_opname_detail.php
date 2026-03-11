@@ -219,7 +219,7 @@ if (isset($_GET['export'])) {
         <th style="border:1px solid #000; padding:6px; width:65px;">SATUAN</th>
         <th style="border:1px solid #000; padding:6px; width:110px;">HARGA SATUAN (Rp)</th>
         <th style="border:1px solid #000; padding:6px; width:110px;">TOTAL (Rp)</th>
-        <th style="border:1px solid #000; padding:6px; width:120px;">KETERANGAN</th>
+        <th style="border:1px solid #000; padding:6px; width:120px;">SUMBER DANA</th>
       </tr>
     </thead>
     <tbody>
@@ -426,7 +426,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th rowspan="2" style="min-width:80px; vertical-align:middle;">SATUAN</th>
               <th rowspan="2" style="min-width:120px; vertical-align:middle;">HARGA SATUAN (Rp)</th>
               <th rowspan="2" style="min-width:120px; vertical-align:middle;">TOTAL (Rp)</th>
-              <th rowspan="2" style="min-width:150px; vertical-align:middle;">KETERANGAN</th>
+              <th rowspan="2" style="min-width:150px; vertical-align:middle;">SUMBER DANA</th>
             </tr>
             <tr class="text-dark fw-bold" style="font-size:.7rem;">
               <th style="min-width:30px; padding:3px;"></th>

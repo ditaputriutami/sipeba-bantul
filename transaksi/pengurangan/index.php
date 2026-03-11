@@ -61,7 +61,7 @@ include BASE_PATH . '/includes/sidebar.php';
             </select>
             <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button>
           </form>
-          <?php if (in_array($role, ['pengurus', 'kepala', 'superadmin'])): ?>
+          <?php if (in_array($role, ['pengurus', 'kepala'])): ?>
             <a href="create.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Pengurangan</a>
           <?php endif; ?>
         </div>
@@ -84,7 +84,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>Jumlah</th>
               <th>Harga Satuan</th>
               <th>Jumlah Harga</th>
-              <th>Keterangan</th>
+              <th>Sumber Dana</th>
               <?php if ($role === 'superadmin'): ?><th>Bagian</th><?php endif; ?>
               <th>Status</th>
               <th>Aksi</th>
@@ -151,14 +151,14 @@ include BASE_PATH . '/includes/sidebar.php';
                     </span>
                   </td>
                   <td rowspan="<?= $rowspan ?>">
-                    <?php if ($p['status'] === 'pending' && in_array($role, ['pengurus', 'kepala', 'superadmin'])): ?>
+                    <?php if ($p['status'] === 'pending' && in_array($role, ['pengurus', 'kepala'])): ?>
                       <a href="edit.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon me-1" title="Edit"><i class="bi bi-pencil"></i></a>
                       <form method="POST" action="delete.php" class="d-inline">
                         <input type="hidden" name="id" value="<?= $p['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
                       </form>
                     <?php else: ?>
-                      <span class="text-muted" title="Tidak dapat diedit/dihapus karena sudah disetujui atau ditolak"><i class="bi bi-lock"></i></span>
+                      <span class="text-muted" title="Tidak dapat diedit/dihapus"><i class="bi bi-lock"></i></span>
                     <?php endif; ?>
                   </td>
                 <?php endif; ?>

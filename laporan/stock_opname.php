@@ -226,7 +226,7 @@ if (isset($_GET['export'])) {
         <th>PENAMBAHAN<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
         <th>PENGURANGAN<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
         <th>SALDO AKHIR<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
-        <th>KETERANGAN</th>
+        <th>SUMBER DANA</th>
       </tr>
     </thead>
     <tbody>
@@ -371,7 +371,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>PENAMBAHAN<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
               <th>PENGURANGAN<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
               <th>SALDO AKHIR<?= $use_date_filter ? '' : ' ' . $f_tahun ?></th>
-              <th>KETERANGAN</th>
+              <th>SUMBER DANA</th>
             </tr>
           </thead>
           <tbody>

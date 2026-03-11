@@ -17,6 +17,12 @@ $id_bagian = getUserBagian();
 
 // ---- Handle Approval/Reject ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
+  if ($role === 'superadmin') {
+    setFlash('error', 'Superadmin hanya memiliki hak akses Read-Only pada Approval.');
+    header('Location: index.php');
+    exit;
+  }
+
   $jenis    = $_POST['jenis'] ?? '';  // 'penerimaan' or 'pengurangan' or 'pengurangan_batch'
   $tx_id    = (int)($_POST['tx_id'] ?? 0);
   $detail_id = (int)($_POST['detail_id'] ?? 0); // For batch-level approval
@@ -226,7 +232,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>Harga Sat.</th>
               <th>Total</th>
               <th>Dari</th>
-              <th>Keterangan</th>
+              <th>Sumber Dana</th>
               <th>Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -248,8 +254,19 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td><?= htmlspecialchars($p['keterangan'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($p['nama_user']) ?></td>
                 <td>
-                  <button class="btn btn-sm btn-success" onclick="openModal('penerimaan',<?= $p['id'] ?>,'setujui')"><i class="bi bi-check-lg"></i></button>
-                  <button class="btn btn-sm btn-danger" onclick="openModal('penerimaan',<?= $p['id'] ?>,'tolak')"><i class="bi bi-x-lg"></i></button>
+                  <?php if ($role !== 'superadmin'): ?>
+                    <form method="POST" class="d-flex flex-column gap-1" style="min-width:200px">
+                      <input type="hidden" name="jenis" value="penerimaan">
+                      <input type="hidden" name="tx_id" value="<?= $p['id'] ?>">
+                      <textarea name="catatan_approval" class="form-control form-control-sm mb-1 text-xs" rows="1" placeholder="Catatan (opsional)"></textarea>
+                      <div class="d-flex gap-1 justify-content-center">
+                        <button type="submit" name="action" value="setujui" class="btn btn-sm btn-success btn-icon w-50" title="Setujui"><i class="bi bi-check-lg"></i></button>
+                        <button type="submit" name="action" value="tolak" class="btn btn-sm btn-danger btn-icon w-50" title="Tolak"><i class="bi bi-x-lg"></i></button>
+                      </div>
+                    </form>
+                  <?php else: ?>
+                    <span class="text-muted"><i class="bi bi-lock"></i> Hanya Kepala</span>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach;
@@ -285,7 +302,7 @@ include BASE_PATH . '/includes/sidebar.php';
               <th>Harga Satuan</th>
               <th>Subtotal</th>
               <th>Total Harga</th>
-              <th>Keterangan</th>
+              <th>Sumber Dana</th>
               <th>Oleh</th>
               <th>Aksi</th>
             </tr>
@@ -377,12 +394,16 @@ include BASE_PATH . '/includes/sidebar.php';
                 <!-- Aksi per batch -->
                 <td class="text-center">
                   <?php if (($p['batch_status'] ?? 'pending') === 'pending'): ?>
-                    <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
-                      <i class="bi bi-check-lg"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
-                      <i class="bi bi-x-lg"></i>
-                    </button>
+                    <?php if ($role !== 'superadmin'): ?>
+                      <button class="btn btn-sm btn-success" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'setujui')" title="Setujui Batch Ini">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" onclick="openBatchModal(<?= $p['detail_id'] ?>,<?= $p['id'] ?>,'tolak')" title="Tolak Batch Ini">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    <?php else: ?>
+                      <span class="text-muted"><i class="bi bi-lock"></i></span>
+                    <?php endif; ?>
                   <?php elseif (($p['batch_status'] ?? '') === 'disetujui'): ?>
                     <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Disetujui</span>
                   <?php elseif (($p['batch_status'] ?? '') === 'ditolak'): ?>

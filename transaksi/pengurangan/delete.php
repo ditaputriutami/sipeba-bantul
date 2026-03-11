@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus','kepala','superadmin']);
+requireRole(['pengurus', 'kepala']);
 $id = (int)($_POST['id'] ?? 0);
 $role = getUserRole();
 $id_bagian = getUserBagian();

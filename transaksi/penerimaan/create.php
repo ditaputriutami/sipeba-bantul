@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus','kepala','superadmin']);
+requireRole(['pengurus', 'kepala']);
 $pageTitle = 'Tambah Penerimaan Barang';
 $user = getCurrentUser();
 $role = getUserRole();
@@ -89,8 +89,8 @@ include BASE_PATH . '/includes/sidebar.php';
               <input type="hidden" name="id_bagian" value="<?=$id_bagian?>">
             <?php endif; ?>
             <div class="col-12">
-              <label class="form-label">Keterangan</label>
-              <textarea name="keterangan" class="form-control" rows="2" placeholder="Catatan tambahan (opsional)"></textarea>
+              <label class="form-label">Sumber Dana</label>
+              <textarea name="keterangan" class="form-control" rows="2" placeholder="Sumber dana pembelian/penerimaan (opsional)"></textarea>
             </div>
           </div>
           <div class="mt-4 d-flex gap-2">

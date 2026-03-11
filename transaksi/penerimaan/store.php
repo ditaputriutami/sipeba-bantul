@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
-requireRole(['pengurus', 'kepala', 'superadmin']);
+requireRole(['pengurus', 'kepala']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
