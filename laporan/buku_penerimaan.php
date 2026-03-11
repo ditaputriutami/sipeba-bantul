@@ -24,6 +24,16 @@ if ($f_bagian) $where .= " AND p.id_bagian=$f_bagian";
 if ($f_dari)   $where .= " AND p.tanggal >= '$f_dari'";
 if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
 
+$allJenis = [];
+$qJenis = $conn->query("SELECT id, kode_jenis, nama_jenis FROM jenis_barang ORDER BY kode_jenis ASC");
+while ($j = $qJenis->fetch_assoc()) {
+  $allJenis[$j['kode_jenis']] = [
+    'kode_jenis' => $j['kode_jenis'],
+    'nama_jenis' => $j['nama_jenis'],
+    'rows'       => [],
+  ];
+}
+
 $data = $conn->query("
     SELECT p.*, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis, bg.nama as nama_bagian, u.nama as nama_input
     FROM penerimaan p
@@ -32,10 +42,19 @@ $data = $conn->query("
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where
-    ORDER BY p.tanggal ASC, p.id ASC
+    ORDER BY j.kode_jenis ASC, p.tanggal ASC, p.id ASC
 ");
 
-$bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
+$totalQty    = 0;
+$totalJumlah = 0;
+while ($r = $data->fetch_assoc()) {
+  $kj = $r['kode_jenis'];
+  if (isset($allJenis[$kj])) {
+    $allJenis[$kj]['rows'][] = $r;
+    $totalQty    += $r['jumlah'];
+    $totalJumlah += $r['jumlah_harga'];
+  }
+}
 
 // Nama bagian yang ditampilkan pada header laporan
 $namaBagianLaporan = 'Sekretariat Daerah';
@@ -128,42 +147,40 @@ if (isset($_GET['export'])) {
     <tbody>
       <?php
       $jenis_no = 1;
-      $current_jenis = null;
-      foreach ($exportData as $r) {
-        if ($current_jenis !== $r['kode_jenis']) {
-          $current_jenis = $r['kode_jenis'];
-          $kode_j = splitKode($r['kode_jenis']);
+      foreach ($allJenis as $kj => $jenis) {
+          $kode_j = splitKode($kj);
       ?>
           <tr>
-            <td style="text-align:center; font-weight:bold;"><?= $jenis_no++ ?></td>
-            <td></td>
-            <td style="font-weight:bold;"><?= htmlspecialchars($r['nama_jenis']) ?></td>
-            <?php foreach ($kode_j as $kj): ?>
-              <td style="text-align:center; font-weight:bold; mso-number-format:'\@';" x:str><?= htmlspecialchars($kj) ?></td>
+            <td style="text-align:center; font-weight:bold; border: 0.5pt solid windowtext;"><?= $jenis_no++ ?></td>
+            <td style="border: 0.5pt solid windowtext;"></td>
+            <td style="font-weight:bold; border: 0.5pt solid windowtext;"><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+            <?php foreach ($kode_j as $k): ?>
+              <td style="text-align:center; font-weight:bold; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($k) ?></td>
             <?php endforeach; ?>
-            <td colspan="8"></td>
+            <?php for($i=0; $i<8; $i++): ?>
+              <td style="border: 0.5pt solid windowtext;"></td>
+            <?php endfor; ?>
           </tr>
-        <?php
-        }
-        $kode_b = splitKode($r['kode_barang']);
+        <?php foreach ($jenis['rows'] as $r) {
+            $kode_b = splitKode($r['kode_barang']);
         ?>
         <tr>
-          <td></td>
-          <td style="text-align:center;">-</td>
-          <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+          <td style="border: 0.5pt solid windowtext;"></td>
+          <td style="text-align:center; border: 0.5pt solid windowtext;">-</td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['nama_barang']) ?></td>
           <?php foreach ($kode_b as $kb): ?>
-            <td style="text-align:center; mso-number-format:'\@';" x:str><?= htmlspecialchars($kb) ?></td>
+            <td style="text-align:center; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($kb) ?></td>
           <?php endforeach; ?>
-          <td><?= htmlspecialchars($r['dari'] ?? '') ?></td>
-          <td><?= htmlspecialchars($r['no_faktur']) ?></td>
-          <td><?= htmlspecialchars($r['tanggal']) ?></td>
-          <td style="text-align:center;"><?= $r['jumlah'] ?></td>
-          <td style="text-align:center;"><?= htmlspecialchars($r['satuan']) ?></td>
-          <td style="text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$r['harga_satuan'] ?></td>
-          <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0';" x:num><?= (int)$r['jumlah_harga'] ?></td>
-          <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['dari'] ?? '') ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['no_faktur']) ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['tanggal']) ?></td>
+          <td style="text-align:center; border: 0.5pt solid windowtext;"><?= $r['jumlah'] ?></td>
+          <td style="text-align:center; border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['satuan']) ?></td>
+          <td style="text-align:right; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['harga_satuan'] ?></td>
+          <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['jumlah_harga'] ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
         </tr>
-      <?php } ?>
+      <?php } } ?>
     </tbody>
     <tfoot>
       <tr style="font-weight:bold; background-color:#e9ecef;">
@@ -259,64 +276,38 @@ include BASE_PATH . '/includes/sidebar.php';
           </thead>
           <tbody>
             <?php
-            // Prepare data for grouping
-            $htmlData = [];
-            $data->data_seek(0);
-            while ($r = $data->fetch_assoc()) $htmlData[] = $r;
-            usort($htmlData, function ($a, $b) {
-              if ($a['kode_jenis'] === $b['kode_jenis']) {
-                return strcmp($a['tanggal'], $b['tanggal']);
-              }
-              return strcmp($a['kode_jenis'], $b['kode_jenis']);
-            });
-
-            if (empty($htmlData)): ?>
-              <tr>
-                <td colspan="18" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data untuk filter yang dipilih.</td>
+            $jenis_no = 1;
+            foreach ($allJenis as $kj => $jenis):
+            ?>
+              <tr class="table-light fw-bold">
+                <td class="text-center"><?= $jenis_no++ ?></td>
+                <td class="text-end"></td>
+                <td><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+                <?php $kode_j = splitKode($kj); foreach ($kode_j as $k): ?>
+                  <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($k) ?></td>
+                <?php endforeach; ?>
+                <td colspan="8"></td>
               </tr>
-              <?php else:
-              $jenis_no = 1;
-              $current_jenis = null;
-              $totalQty = 0;
-              $totalJumlah = 0;
-
-              foreach ($htmlData as $r):
-                $totalQty += $r['jumlah'];
-                $totalJumlah += $r['jumlah_harga'];
-
-                if ($current_jenis !== $r['kode_jenis']):
-                  $current_jenis = $r['kode_jenis'];
-              ?>
-                  <tr class="table-light fw-bold">
-                    <td class="text-center"><?= $jenis_no++ ?></td>
-                    <td class="text-end"></td>
-                    <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-                    <?php $kode_j = splitKode($r['kode_jenis']); foreach ($kode_j as $kj): ?>
-                      <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kj) ?></td>
-                    <?php endforeach; ?>
-                    <td colspan="8"></td>
-                  </tr>
-                <?php endif; ?>
-                <tr>
-                  <td></td>
-                  <td class="text-center">-</td>
-                  <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-                  <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
-                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
-                  <?php endforeach; ?>
-                  <td><?= htmlspecialchars($r['dari'] ?? '') ?></td>
-                  <td><?= htmlspecialchars($r['no_faktur']) ?></td>
-                  <td><?= formatTanggal($r['tanggal']) ?></td>
-                  <td class="text-center"><?= number_format($r['jumlah'], 0, ',', '.') ?></td>
-                  <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
-                  <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
-                  <td class="text-end fw-semibold"><?= number_format($r['jumlah_harga'], 0, ',', '.') ?></td>
-                  <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
-                </tr>
-            <?php endforeach;
-            endif; ?>
+            <?php foreach ($jenis['rows'] as $r): ?>
+              <tr>
+                <td></td>
+                <td class="text-center">-</td>
+                <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+                <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
+                  <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
+                <?php endforeach; ?>
+                <td><?= htmlspecialchars($r['dari'] ?? '') ?></td>
+                <td><?= htmlspecialchars($r['no_faktur']) ?></td>
+                <td><?= htmlspecialchars($r['tanggal']) ?></td>
+                <td class="text-center"><?= number_format($r['jumlah'], 0, ',', '.') ?></td>
+                <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
+                <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
+                <td class="text-end fw-semibold"><?= number_format($r['jumlah_harga'], 0, ',', '.') ?></td>
+                <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+              </tr>
+            <?php endforeach; endforeach; ?>
           </tbody>
-          <?php if (!empty($htmlData)): ?>
+          <?php if (true): ?>
             <tfoot class="table-secondary fw-bold">
               <tr>
                 <td colspan="13" class="text-end">JUMLAH</td>

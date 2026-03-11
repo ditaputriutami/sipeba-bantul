@@ -23,6 +23,16 @@ if ($f_bagian) $where .= " AND p.id_bagian=$f_bagian";
 if ($f_dari)   $where .= " AND p.tanggal >= '$f_dari'";
 if ($f_sampai) $where .= " AND p.tanggal <= '$f_sampai'";
 
+$allJenis = [];
+$qJenis = $conn->query("SELECT id, kode_jenis, nama_jenis FROM jenis_barang ORDER BY kode_jenis ASC");
+while ($j = $qJenis->fetch_assoc()) {
+  $allJenis[$j['kode_jenis']] = [
+    'kode_jenis' => $j['kode_jenis'],
+    'nama_jenis' => $j['nama_jenis'],
+    'rows'       => [],
+  ];
+}
+
 // Join dengan detail FIFO untuk breakdown per batch
 $data = $conn->query("
     SELECT p.id, p.no_permintaan, p.tanggal, p.keterangan,
@@ -39,8 +49,19 @@ $data = $conn->query("
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where
-    ORDER BY p.tanggal ASC, p.id ASC, pd.id ASC
+    ORDER BY j.kode_jenis ASC, p.tanggal ASC, p.id ASC, pd.id ASC
 ");
+
+$totalNilai = 0;
+$totalQty = 0;
+while ($r = $data->fetch_assoc()) {
+  $kj = $r['kode_jenis'];
+  if (isset($allJenis[$kj])) {
+    $allJenis[$kj]['rows'][] = $r;
+    $totalNilai += $r['total_nilai_batch'];
+    $totalQty += $r['jumlah_dipotong'];
+  }
+}
 
 $bagianList = ($role === 'superadmin') ? $conn->query("SELECT * FROM bagian ORDER BY nama") : null;
 
@@ -85,20 +106,7 @@ if (isset($_GET['export'])) {
   header('Pragma: no-cache');
   echo "\xEF\xBB\xBF";
 
-  // Sort data for grouping
-  $exportData = [];
-  $totalNilai = 0;
-  $totalQty = 0;
-  $data->data_seek(0);
-  while ($r = $data->fetch_assoc()) {
-    $exportData[] = $r;
-    $totalNilai += $r['total_nilai_batch'];
-    $totalQty += $r['jumlah_dipotong'];
-  }
-  usort($exportData, function ($a, $b) {
-    if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
-    return strcmp($a['kode_jenis'], $b['kode_jenis']);
-  });
+
 ?>
   <table border="1" cellpadding="3" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:10pt;">
     <thead>
@@ -132,42 +140,40 @@ if (isset($_GET['export'])) {
     <tbody>
       <?php
       $jenis_no = 1;
-      $current_jenis = null;
-      foreach ($exportData as $r) {
-        if ($current_jenis !== $r['kode_jenis']) {
-          $current_jenis = $r['kode_jenis'];
-          $kode_j = splitKode($r['kode_jenis']);
+      foreach ($allJenis as $kj => $jenis) {
+          $kode_j = splitKode($kj);
       ?>
           <tr style="font-weight:bold; background-color:#f8f9fa;">
-            <td style="text-align:center;"><?= $jenis_no++ ?></td>
-            <td></td>
-            <td></td>
-            <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-            <?php foreach ($kode_j as $kj): ?>
-              <td style="text-align:center; font-weight:bold; mso-number-format:'\@';" x:str><?= htmlspecialchars($kj) ?></td>
+            <td style="text-align:center; border: 0.5pt solid windowtext;"><?= $jenis_no++ ?></td>
+            <td style="border: 0.5pt solid windowtext;"></td>
+            <td style="border: 0.5pt solid windowtext;"></td>
+            <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+            <?php foreach ($kode_j as $k): ?>
+              <td style="text-align:center; font-weight:bold; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($k) ?></td>
             <?php endforeach; ?>
-            <td colspan="5"></td>
+            <?php for($i=0; $i<6; $i++): ?>
+              <td style="border: 0.5pt solid windowtext;"></td>
+            <?php endfor; ?>
           </tr>
-        <?php
-        }
-        $kode_b = splitKode($r['kode_barang']);
+        <?php foreach ($jenis['rows'] as $r) {
+            $kode_b = splitKode($r['kode_barang']);
         ?>
         <tr>
-          <td></td>
-          <td><?= htmlspecialchars($r['tanggal']) ?></td>
-          <td style="text-align:center;">-</td>
-          <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+          <td style="border: 0.5pt solid windowtext;"></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['tanggal']) ?></td>
+          <td style="text-align:center; border: 0.5pt solid windowtext;">-</td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['nama_barang']) ?></td>
           <?php foreach ($kode_b as $kb): ?>
-            <td style="text-align:center; mso-number-format:'\@';" x:str><?= htmlspecialchars($kb) ?></td>
+            <td style="text-align:center; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($kb) ?></td>
           <?php endforeach; ?>
-          <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
-          <td style="text-align:center;" x:num><?= (int)$r['jumlah_dipotong'] ?></td>
-          <td><?= htmlspecialchars($r['satuan']) ?></td>
-          <td style="text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$r['harga_satuan'] ?></td>
-          <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0';" x:num><?= (int)$r['total_nilai_batch'] ?></td>
-          <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['no_permintaan']) ?></td>
+          <td style="text-align:center; border: 0.5pt solid windowtext;" x:num><?= (int)$r['jumlah_dipotong'] ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['satuan']) ?></td>
+          <td style="text-align:right; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['harga_satuan'] ?></td>
+          <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['total_nilai_batch'] ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
         </tr>
-      <?php } ?>
+      <?php } } ?>
     </tbody>
     <tfoot>
       <tr style="font-weight:bold; background-color:#e9ecef;">
@@ -255,62 +261,38 @@ include BASE_PATH . '/includes/sidebar.php';
           </thead>
           <tbody>
             <?php
-            // Prepare HTML data for consistent grouping by kode_jenis
-            $htmlData = [];
-            $data->data_seek(0);
-            while ($r = $data->fetch_assoc()) $htmlData[] = $r;
-            usort($htmlData, function ($a, $b) {
-              if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
-              return strcmp($a['kode_jenis'], $b['kode_jenis']);
-            });
-
-            $totalNilai = 0;
-            $totalQty = 0;
-            $found = false;
-            $current_jenis = null;
             $jenis_no = 1;
-            foreach ($htmlData as $r):
-              $found = true;
-              $totalNilai += $r['total_nilai_batch'];
-              $totalQty += $r['jumlah_dipotong'];
-
-              if ($current_jenis !== $r['kode_jenis']):
-                $current_jenis = $r['kode_jenis'];
+            foreach ($allJenis as $kj => $jenis):
             ?>
                 <tr class="table-light fw-bold">
                   <td class="text-center"><?= $jenis_no++ ?></td>
                   <td></td>
                   <td class="text-center"></td>
-                  <td><?= htmlspecialchars($r['nama_jenis']) ?></td>
-                  <?php $kode_j = splitKode($r['kode_jenis']); foreach ($kode_j as $kj): ?>
-                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kj) ?></td>
+                  <td><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+                  <?php $kode_j = splitKode($kj); foreach ($kode_j as $k): ?>
+                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($k) ?></td>
                   <?php endforeach; ?>
                   <td colspan="5"></td>
                 </tr>
-              <?php endif; ?>
-              <tr>
-                <td></td>
-                <td><?= formatTanggal($r['tanggal']) ?></td>
-                <td class="text-center">-</td>
-                <td><?= htmlspecialchars($r['nama_barang']) ?></td>
-                <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
-                  <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
-                <?php endforeach; ?>
-                <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
-                <td class="text-center"><?= number_format($r['jumlah_dipotong']) ?></td>
-                <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
-                <td class="text-end"><?= formatRupiah($r['harga_satuan']) ?></td>
-                <td class="text-end fw-semibold"><?= formatRupiah($r['total_nilai_batch']) ?></td>
-                <td><?= htmlspecialchars($r['keterangan'] ?? '—') ?></td>
-              </tr>
-            <?php endforeach;
-            if (!$found): ?>
-              <tr>
-                <td colspan="17" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>Tidak ada data pengeluaran.</td>
-              </tr>
-            <?php endif; ?>
+              <?php foreach ($jenis['rows'] as $r): ?>
+                <tr>
+                  <td></td>
+                  <td><?= htmlspecialchars($r['tanggal']) ?></td>
+                  <td class="text-center">-</td>
+                  <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+                  <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
+                    <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
+                  <?php endforeach; ?>
+                  <td><?= htmlspecialchars($r['no_permintaan']) ?></td>
+                  <td class="text-center"><?= number_format($r['jumlah_dipotong']) ?></td>
+                  <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
+                  <td class="text-end"><?= formatRupiah($r['harga_satuan']) ?></td>
+                  <td class="text-end fw-semibold"><?= formatRupiah($r['total_nilai_batch']) ?></td>
+                  <td><?= htmlspecialchars($r['keterangan'] ?? '—') ?></td>
+                </tr>
+              <?php endforeach; endforeach; ?>
           </tbody>
-          <?php if ($found): ?>
+          <?php if (true): ?>
             <tfoot>
               <tr class="table-secondary fw-bold">
                 <td colspan="12" class="text-end">JUMLAH</td>
