@@ -71,7 +71,8 @@ if ($f_id_barang) {
             p.jumlah       AS qty,
             p.harga_satuan AS harga_satuan,
             (p.jumlah * p.harga_satuan) AS jumlah_harga,
-            p.id           AS sort_id
+            p.id           AS sort_id,
+            p.created_at   AS waktu_input
         FROM penerimaan p
         WHERE p.id_barang = $f_id_barang
           AND p.status = 'disetujui'
@@ -87,7 +88,8 @@ if ($f_id_barang) {
             pd.jumlah_dipotong AS qty,
             pd.harga_satuan   AS harga_satuan,
             (pd.jumlah_dipotong * pd.harga_satuan) AS jumlah_harga,
-            pr.id             AS sort_id
+            pr.id             AS sort_id,
+            pr.created_at     AS waktu_input
         FROM pengurangan pr
         JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
         WHERE pr.id_barang = $f_id_barang
@@ -95,7 +97,7 @@ if ($f_id_barang) {
           AND pr.tanggal BETWEEN '$f_dari' AND '$f_sampai'
           $bagianWherePeng
 
-        ORDER BY tanggal ASC, sort_id ASC
+        ORDER BY tanggal ASC, waktu_input ASC, sort_id ASC
     ";
     $res = $conn->query($query);
     while ($row = $res->fetch_assoc()) {
