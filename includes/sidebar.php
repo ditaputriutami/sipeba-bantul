@@ -125,6 +125,9 @@ function isActive(string $path): string
       <a href="<?= BASE_URL ?>/laporan/rekonsiliasi.php" class="menu-item <?= isActive('/rekonsiliasi') ?>">
         <i class="bi bi-bar-chart-line"></i><span>Rekonsiliasi Persediaan</span>
       </a>
+      <a href="<?= BASE_URL ?>/laporan/kartu_persediaan.php" class="menu-item <?= isActive('/kartu_persediaan') ?>">
+        <i class="bi bi-card-list"></i><span>Kartu Persediaan</span>
+      </a>
     </div>
   </div>
 
