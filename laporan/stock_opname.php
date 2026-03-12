@@ -436,3 +436,7 @@ include BASE_PATH . '/includes/sidebar.php';
   </div>
 </div>
 <?php include BASE_PATH . '/includes/footer.php'; ?>
+    </div>
+  </div>
+</div>
+<?php include BASE_PATH . '/includes/footer.php'; ?>

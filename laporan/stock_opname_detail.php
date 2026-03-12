@@ -109,6 +109,7 @@ if ($f_bagian) {
 }
 
 // Query Detail: Ambil posisi stok per barang dari transaksi disetujui sampai akhir periode
+// Menggunakan p.id untuk membedakan batch agar harga satuan yang berbeda tidak digabung
 $query = "
     SELECT 
         b.id as id_barang,
@@ -117,36 +118,21 @@ $query = "
         b.satuan,
         j.nama_jenis,
         j.kode_jenis,
-        (
-            COALESCE((
-                SELECT SUM(p.jumlah)
-                FROM penerimaan p
-                WHERE p.id_barang = b.id
-                  AND p.status = 'disetujui'
-                  AND $kondisi_penerimaan_sampai
-                  $where_bagian_p
-            ), 0)
-            -
+        p.harga_satuan,
+        p.sumber,
+        SUM(
+            p.jumlah 
+            - 
             COALESCE((
                 SELECT SUM(pd.jumlah_dipotong)
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
-                WHERE pr.id_barang = b.id
+                WHERE pd.id_penerimaan = p.id
                   AND pr.status IN ('disetujui','disetujui sebagian')
                   AND $kondisi_pengurangan_sampai
                   $where_bagian_pr
             ), 0)
         ) as jumlah,
-        COALESCE((
-            SELECT p2.harga_satuan
-            FROM penerimaan p2
-            WHERE p2.id_barang = b.id
-              AND p2.status = 'disetujui'
-              AND $kondisi_harga_terakhir
-              $where_bagian_p2
-            ORDER BY p2.tanggal DESC, p2.id DESC
-            LIMIT 1
-        ), 0) as harga_satuan,
         (
             SELECT GROUP_CONCAT(DISTINCT COALESCE(so.keterangan, '-') SEPARATOR '; ')
             FROM stock_opname so
@@ -155,13 +141,16 @@ $query = "
               $where_tanggal
               $where_bagian_so
         ) as keterangan
-    FROM barang b
+    FROM penerimaan p
+    JOIN barang b ON p.id_barang = b.id
     JOIN jenis_barang j ON b.id_jenis_barang = j.id
-    WHERE 1=1
-        $where_jenis
-    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis
+    WHERE p.status = 'disetujui'
+      AND $kondisi_penerimaan_sampai
+      $where_bagian_p
+      $where_jenis
+    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis, p.harga_satuan, p.sumber
     HAVING jumlah > 0
-    ORDER BY j.kode_jenis ASC, b.kode_barang ASC, b.nama_barang ASC
+    ORDER BY j.kode_jenis ASC, b.kode_barang ASC, b.nama_barang ASC, p.harga_satuan ASC
 ";
 
 $data = $conn->query($query);
@@ -298,7 +287,7 @@ if (isset($_GET['export'])) {
             <td align="center" style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['satuan']) ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $r['harga_satuan'] ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $total_rp ?></td>
-            <td style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
+            <td style="border:1px solid #000; padding:5px;"><?= ($r['sumber'] ? ucwords(str_replace('_', ' ', $r['sumber'])) : '-') . ($r['keterangan'] ? " (" . htmlspecialchars($r['keterangan']) . ")" : "") ?></td>
           </tr>
         <?php endforeach; ?>
         <?php $no_jenis_group++; ?>
@@ -510,7 +499,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                   <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
                   <td class="text-end fw-semibold"><?= number_format($total_rp, 0, ',', '.') ?></td>
-                  <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
+                  <td><?= ($r['sumber'] ? ucwords(str_replace('_', ' ', $r['sumber'])) : '-') . ($r['keterangan'] ? " (" . htmlspecialchars($r['keterangan']) . ")" : "") ?></td>
                 </tr>
               <?php endforeach; ?>
               <?php $no_jenis_group++; ?>
