@@ -115,11 +115,11 @@ if ($use_date_filter) {
             ) as pengurangan,
             -- Keterangan (Ambil dari Stock Opname dalam range tanggal)
             (
-                SELECT GROUP_CONCAT(DISTINCT so.keterangan SEPARATOR '; ')
-                FROM stock_opname so
-                JOIN barang b2 ON so.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND so.status = 'disetujui' AND so.tanggal BETWEEN '$f_dari_tanggal' AND '$f_sampai_tanggal' $where_bagian AND so.keterangan != ''
-            ) as keterangan
+              SELECT GROUP_CONCAT(DISTINCT p.keterangan SEPARATOR '; ')
+              FROM penerimaan p
+              JOIN barang b2 ON p.id_barang = b2.id
+              WHERE b2.id_jenis_barang = j.id AND p.status = 'disetujui' AND p.tanggal BETWEEN '$f_dari_tanggal' AND '$f_sampai_tanggal' $where_bagian AND COALESCE(p.keterangan, '') != ''
+            ) as sumber_dana
         FROM jenis_barang j
         ORDER BY j.kode_jenis ASC
     ";
@@ -160,11 +160,11 @@ if ($use_date_filter) {
             ) as pengurangan,
             -- Keterangan (Ambil dari Stock Opname tahun filter)
             (
-                SELECT GROUP_CONCAT(DISTINCT so.keterangan SEPARATOR '; ')
-                FROM stock_opname so
-                JOIN barang b2 ON so.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND so.status = 'disetujui' AND YEAR(so.tanggal) = $f_tahun $where_bagian AND so.keterangan != ''
-            ) as keterangan
+              SELECT GROUP_CONCAT(DISTINCT p.keterangan SEPARATOR '; ')
+              FROM penerimaan p
+              JOIN barang b2 ON p.id_barang = b2.id
+              WHERE b2.id_jenis_barang = j.id AND p.status = 'disetujui' AND YEAR(p.tanggal) = $f_tahun $where_bagian AND COALESCE(p.keterangan, '') != ''
+            ) as sumber_dana
         FROM jenis_barang j
         ORDER BY j.kode_jenis ASC
     ";
@@ -270,7 +270,7 @@ if (isset($_GET['export'])) {
           <td align="right"><?= number_format($r['penambahan'], 2, ',', '.') ?></td>
           <td align="right"><?= number_format($r['pengurangan'], 2, ',', '.') ?></td>
           <td align="right"><?= number_format($s_akhir, 2, ',', '.') ?></td>
-          <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+          <td><?= htmlspecialchars($r['sumber_dana'] ?? '') ?></td>
         </tr>
       <?php endwhile; ?>
     </tbody>
@@ -416,7 +416,7 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td class="text-end"><?= number_format($r['penambahan'], 0, ',', '.') ?></td>
                 <td class="text-end"><?= number_format($r['pengurangan'], 0, ',', '.') ?></td>
                 <td class="text-end fw-bold"><?= number_format($s_akhir, 0, ',', '.') ?></td>
-                <td><small><?= htmlspecialchars($r['keterangan'] ?? '') ?></small></td>
+                <td><small><?= htmlspecialchars($r['sumber_dana'] ?? '') ?></small></td>
               </tr>
             <?php endwhile; ?>
           </tbody>

@@ -40,6 +40,7 @@ $data = $conn->query("
            j.nama_jenis, j.kode_jenis,
            pd.jumlah_dipotong, pd.harga_satuan,
            (pd.jumlah_dipotong * pd.harga_satuan) as total_nilai_batch,
+           pen.keterangan as batch_keterangan,
            pen.no_faktur as batch_no_faktur, pen.tanggal as batch_tanggal
     FROM pengurangan p
     JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
@@ -171,7 +172,7 @@ if (isset($_GET['export'])) {
           <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['satuan']) ?></td>
           <td style="text-align:right; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['harga_satuan'] ?></td>
           <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['total_nilai_batch'] ?></td>
-          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['batch_keterangan'] ?? '-') ?></td>
         </tr>
       <?php } } ?>
     </tbody>
@@ -288,7 +289,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                   <td class="text-end"><?= formatRupiah($r['harga_satuan']) ?></td>
                   <td class="text-end fw-semibold"><?= formatRupiah($r['total_nilai_batch']) ?></td>
-                  <td><?= htmlspecialchars($r['keterangan'] ?? '—') ?></td>
+                  <td><?= htmlspecialchars($r['batch_keterangan'] ?? '-') ?></td>
                 </tr>
               <?php endforeach; endforeach; ?>
           </tbody>

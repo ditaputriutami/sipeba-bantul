@@ -119,7 +119,7 @@ $query = "
         j.nama_jenis,
         j.kode_jenis,
         p.harga_satuan,
-        p.sumber,
+        p.keterangan,
         SUM(
             p.jumlah 
             - 
@@ -132,15 +132,7 @@ $query = "
                   AND $kondisi_pengurangan_sampai
                   $where_bagian_pr
             ), 0)
-        ) as jumlah,
-        (
-            SELECT GROUP_CONCAT(DISTINCT COALESCE(so.keterangan, '-') SEPARATOR '; ')
-            FROM stock_opname so
-            WHERE so.id_barang = b.id
-              AND so.status = 'disetujui'
-              $where_tanggal
-              $where_bagian_so
-        ) as keterangan
+        ) as jumlah
     FROM penerimaan p
     JOIN barang b ON p.id_barang = b.id
     JOIN jenis_barang j ON b.id_jenis_barang = j.id
@@ -148,7 +140,7 @@ $query = "
       AND $kondisi_penerimaan_sampai
       $where_bagian_p
       $where_jenis
-    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis, p.harga_satuan, p.sumber
+    GROUP BY b.id, b.kode_barang, b.nama_barang, b.satuan, j.nama_jenis, j.kode_jenis, p.harga_satuan, p.keterangan
     HAVING jumlah > 0
     ORDER BY j.kode_jenis ASC, b.kode_barang ASC, b.nama_barang ASC, p.harga_satuan ASC
 ";
@@ -287,7 +279,7 @@ if (isset($_GET['export'])) {
             <td align="center" style="border:1px solid #000; padding:5px;"><?= htmlspecialchars($r['satuan']) ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $r['harga_satuan'] ?></td>
             <td align="right" style="border:1px solid #000; padding:5px; mso-number-format:'#,##0';"><?= $total_rp ?></td>
-            <td style="border:1px solid #000; padding:5px;"><?= ($r['sumber'] ? ucwords(str_replace('_', ' ', $r['sumber'])) : '-') . ($r['keterangan'] ? " (" . htmlspecialchars($r['keterangan']) . ")" : "") ?></td>
+            <td style="border:1px solid #000; padding:5px;"><?= $r['keterangan'] ? htmlspecialchars($r['keterangan']) : '-' ?></td>
           </tr>
         <?php endforeach; ?>
         <?php $no_jenis_group++; ?>
@@ -499,7 +491,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                   <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
                   <td class="text-end fw-semibold"><?= number_format($total_rp, 0, ',', '.') ?></td>
-                  <td><?= ($r['sumber'] ? ucwords(str_replace('_', ' ', $r['sumber'])) : '-') . ($r['keterangan'] ? " (" . htmlspecialchars($r['keterangan']) . ")" : "") ?></td>
+                  <td><?= $r['keterangan'] ? htmlspecialchars($r['keterangan']) : '-' ?></td>
                 </tr>
               <?php endforeach; ?>
               <?php $no_jenis_group++; ?>

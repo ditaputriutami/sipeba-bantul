@@ -180,7 +180,7 @@ if (isset($_GET['export'])) {
           <td style="text-align:center; border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['satuan']) ?></td>
           <td style="text-align:right; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['harga_satuan'] ?></td>
           <td style="text-align:right; font-weight:bold; mso-number-format:'#,##0'; border: 0.5pt solid windowtext;" x:num><?= (int)$r['jumlah_harga'] ?></td>
-          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
         </tr>
       <?php } } ?>
     </tbody>
@@ -305,7 +305,7 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td class="text-center"><?= htmlspecialchars($r['satuan']) ?></td>
                 <td class="text-end"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
                 <td class="text-end fw-semibold"><?= number_format($r['jumlah_harga'], 0, ',', '.') ?></td>
-                <td><?= htmlspecialchars($r['keterangan'] ?? '') ?></td>
+                <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
               </tr>
             <?php endforeach; endforeach; ?>
           </tbody>
