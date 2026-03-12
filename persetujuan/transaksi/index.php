@@ -255,13 +255,13 @@ include BASE_PATH . '/includes/sidebar.php';
                 <td><?= htmlspecialchars($p['nama_user']) ?></td>
                 <td>
                   <?php if ($role !== 'superadmin'): ?>
-                    <form method="POST" class="d-flex flex-column gap-1" style="min-width:200px">
+                    <form method="POST" class="d-flex flex-column gap-1" style="min-width:120px">
                       <input type="hidden" name="jenis" value="penerimaan">
                       <input type="hidden" name="tx_id" value="<?= $p['id'] ?>">
-                      <textarea name="catatan_approval" class="form-control form-control-sm mb-1 text-xs" rows="1" placeholder="Catatan (opsional)"></textarea>
+                      <input type="hidden" name="catatan_approval" value="">
                       <div class="d-flex gap-1 justify-content-center">
-                        <button type="submit" name="action" value="setujui" class="btn btn-sm btn-success btn-icon w-50" title="Setujui"><i class="bi bi-check-lg"></i></button>
-                        <button type="submit" name="action" value="tolak" class="btn btn-sm btn-danger btn-icon w-50" title="Tolak"><i class="bi bi-x-lg"></i></button>
+                        <button type="submit" name="action_type" value="setujui" class="btn btn-sm btn-success btn-icon w-50" title="Setujui"><i class="bi bi-check-lg"></i></button>
+                        <button type="submit" name="action_type" value="tolak" class="btn btn-sm btn-danger btn-icon w-50" title="Tolak"><i class="bi bi-x-lg"></i></button>
                       </div>
                     </form>
                   <?php else: ?>
@@ -443,10 +443,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <input type="hidden" name="tx_id" id="modalTxId">
           <input type="hidden" name="detail_id" id="modalDetailId">
           <input type="hidden" name="action_type" id="modalAction">
-          <div class="mb-3">
-            <label class="form-label">Catatan (opsional)</label>
-            <textarea name="catatan_approval" class="form-control" rows="3" placeholder="Catatan untuk penginput..."></textarea>
-          </div>
+          <input type="hidden" name="catatan_approval" value="">
           <div class="alert" id="modalAlert"></div>
         </div>
         <div class="modal-footer">
