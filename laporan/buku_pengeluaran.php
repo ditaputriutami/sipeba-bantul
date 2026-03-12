@@ -35,7 +35,7 @@ while ($j = $qJenis->fetch_assoc()) {
 
 // Join dengan detail FIFO untuk breakdown per batch
 $data = $conn->query("
-    SELECT p.id, p.no_permintaan, p.tanggal, p.keterangan,
+  SELECT p.id, p.no_permintaan, p.tanggal, p.keterangan, p.created_at,
            b.kode_barang, b.nama_barang, b.satuan, bg.nama as nama_bagian, u.nama as nama_input,
            j.nama_jenis, j.kode_jenis,
            pd.jumlah_dipotong, pd.harga_satuan,
@@ -50,7 +50,7 @@ $data = $conn->query("
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where AND pd.status = 'disetujui'
-    ORDER BY j.kode_jenis ASC, p.tanggal ASC, p.id ASC, pd.id ASC
+    ORDER BY j.kode_jenis ASC, p.created_at ASC, p.id ASC, pd.id ASC
 ");
 
 $totalNilai = 0;

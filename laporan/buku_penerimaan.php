@@ -42,7 +42,7 @@ $data = $conn->query("
     JOIN bagian bg ON p.id_bagian=bg.id
     JOIN users u ON p.id_user=u.id
     $where
-    ORDER BY j.kode_jenis ASC, p.tanggal ASC, p.id ASC
+    ORDER BY j.kode_jenis ASC, p.created_at ASC, p.id ASC
 ");
 
 $totalQty    = 0;
@@ -110,7 +110,7 @@ if (isset($_GET['export'])) {
     $totalJumlah += $r['jumlah_harga'];
   }
   usort($exportData, function ($a, $b) {
-    if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['tanggal'], $b['tanggal']);
+    if ($a['kode_jenis'] === $b['kode_jenis']) return strcmp($a['created_at'] ?? '', $b['created_at'] ?? '');
     return strcmp($a['kode_jenis'], $b['kode_jenis']);
   });
 ?>

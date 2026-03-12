@@ -32,7 +32,7 @@ $list = $conn->query("
     LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
     LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
     $where
-    ORDER BY p.created_at DESC, pd.id ASC
+    ORDER BY p.created_at ASC, p.id ASC, pd.id ASC
 ");
 
 include BASE_PATH . '/includes/header.php';

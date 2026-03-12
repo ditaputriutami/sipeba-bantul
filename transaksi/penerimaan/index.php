@@ -26,7 +26,7 @@ $list = $conn->query("
     JOIN users u ON p.id_user=u.id
     LEFT JOIN users ap ON p.id_approver=ap.id
     $where
-    ORDER BY p.created_at DESC
+    ORDER BY p.created_at ASC, p.id ASC
 ");
 
 include BASE_PATH . '/includes/header.php';
