@@ -128,7 +128,7 @@ $query = "
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
                 WHERE pd.id_penerimaan = p.id
-                  AND pr.status IN ('disetujui','disetujui sebagian')
+                  AND pd.status = 'disetujui'
                   AND $kondisi_pengurangan_sampai
                   $where_bagian_pr
             ), 0)
@@ -270,7 +270,7 @@ if (isset($_GET['export'])) {
           }
         ?>
           <tr>
-            <td align="center" style="border:1px solid #000; padding:5px;"><?= $no_jenis_group . '.' . $no_barang++ ?></td>
+            <td align="center" style="border:1px solid #000; padding:5px; mso-number-format:'\@';"><?= $no_jenis_group . '.' . $no_barang++ ?></td>
             <td style="border:1px solid #000; padding:5px 5px 5px 18px;"><?= htmlspecialchars($r['nama_barang']) ?></td>
             <?php foreach ($kode_parts as $kp): ?>
               <td align="center" style="border:1px solid #000; mso-number-format:'\@'; padding:4px;"><?= $kp ?></td>

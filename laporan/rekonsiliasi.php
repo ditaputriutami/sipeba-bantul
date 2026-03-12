@@ -69,7 +69,7 @@ $query = "
             FROM pengurangan pg 
             JOIN pengurangan_detail pd ON pd.id_pengurangan=pg.id 
             WHERE pg.id_barang=b.id 
-                AND pg.status='disetujui' 
+                AND pd.status='disetujui' 
                 AND pg.tanggal BETWEEN '$f_dari' AND '$f_sampai'
                 $bagianFilterPengurangan
         ), 0) AS pengurangan_nilai
@@ -221,6 +221,7 @@ if (isset($_GET['export'])) {
     $total_pengurangan = 0;
     $total_saldo = 0;
     foreach ($dataByJenis as $jenis) {
+        $item_no = 1;
 ?>
   <tr style="font-weight:bold; background-color:#e8e8e8;">
     <td align="center" style="border:1px solid #000; padding:10px;"><?= $no++ ?></td>
@@ -233,7 +234,7 @@ if (isset($_GET['export'])) {
         $total_saldo += $brg['saldo_akhir'];
 ?>
   <tr>
-    <td style="border:1px solid #000; padding:8px;"></td>
+    <td style="border:1px solid #000; padding:8px; text-align:center; mso-number-format:'\@';"><?= ($no-1) . '.' . ($item_no++) ?></td>
     <td style="border:1px solid #000; padding:8px; padding-left:20px;"><?= htmlspecialchars($brg['nama_barang']) ?></td>
     <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$brg['penerimaan'] ?></td>
     <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$brg['pengurangan'] ?></td>
@@ -370,6 +371,7 @@ include BASE_PATH . '/includes/sidebar.php';
               $total_pengurangan = 0;
               $total_saldo = 0;
               foreach ($dataByJenis as $jenis):
+                  $item_no = 1;
               ?>
                 <!-- Header Jenis Barang -->
                 <tr style="background: #e9ecef; font-weight: bold;">
@@ -383,7 +385,7 @@ include BASE_PATH . '/includes/sidebar.php';
                   $total_saldo += $brg['saldo_akhir'];
                 ?>
                   <tr>
-                    <td></td>
+                    <td class="text-center"><?= ($no-1) . '.' . ($item_no++) ?></td>
                     <td style="padding-left: 30px;"><?= htmlspecialchars($brg['nama_barang']) ?></td>
                     <td class="text-end"><?= formatRupiah($brg['penerimaan']) ?></td>
                     <td class="text-end"><?= formatRupiah($brg['pengurangan']) ?></td>

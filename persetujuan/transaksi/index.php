@@ -168,7 +168,7 @@ $pengPending = $conn->query("
     JOIN users u ON p.id_user=u.id
     LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = p.id
     LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
-    WHERE (p.status='pending' OR p.status='disetujui sebagian') $bagianFilter 
+    WHERE p.status='pending' $bagianFilter 
     ORDER BY p.created_at, pd.id ASC
 ");
 

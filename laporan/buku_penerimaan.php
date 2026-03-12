@@ -151,11 +151,11 @@ if (isset($_GET['export'])) {
       $jenis_no = 1;
       foreach ($allJenis as $kj => $jenis) {
           $kode_j = splitKode($kj);
+          $item_no = 1;
       ?>
           <tr>
             <td style="text-align:center; font-weight:bold; border: 0.5pt solid windowtext;"><?= $jenis_no++ ?></td>
-            <td style="border: 0.5pt solid windowtext;"></td>
-            <td style="font-weight:bold; border: 0.5pt solid windowtext;"><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+            <td colspan="2" style="font-weight:bold; border: 0.5pt solid windowtext;"><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
             <?php foreach ($kode_j as $k): ?>
               <td style="text-align:center; font-weight:bold; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($k) ?></td>
             <?php endforeach; ?>
@@ -167,10 +167,9 @@ if (isset($_GET['export'])) {
             $kode_b = splitKode($r['kode_barang']);
         ?>
         <tr>
-          <td style="border: 0.5pt solid windowtext;"></td>
-          <td style="text-align:center; border: 0.5pt solid windowtext;">-</td>
-          <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['nama_barang']) ?></td>
-          <?php foreach ($kode_b as $kb): ?>
+          <td style="border: 0.5pt solid windowtext; text-align:center; mso-number-format:'\@';"><?= ($jenis_no-1) . '.' . ($item_no++) ?></td>
+          <td colspan="2" style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['nama_barang']) ?></td>
+<?php foreach ($kode_b as $kb): ?>
             <td style="text-align:center; mso-number-format:'\@'; border: 0.5pt solid windowtext;" x:str><?= htmlspecialchars($kb) ?></td>
           <?php endforeach; ?>
           <td style="border: 0.5pt solid windowtext;"><?= htmlspecialchars($r['dari'] ?? '') ?></td>
@@ -280,11 +279,11 @@ include BASE_PATH . '/includes/sidebar.php';
             <?php
             $jenis_no = 1;
             foreach ($allJenis as $kj => $jenis):
+              $item_no = 1;
             ?>
               <tr class="table-light fw-bold">
                 <td class="text-center"><?= $jenis_no++ ?></td>
-                <td class="text-end"></td>
-                <td><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
+                <td colspan="2"><?= htmlspecialchars($jenis['nama_jenis']) ?></td>
                 <?php $kode_j = splitKode($kj); foreach ($kode_j as $k): ?>
                   <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($k) ?></td>
                 <?php endforeach; ?>
@@ -292,9 +291,8 @@ include BASE_PATH . '/includes/sidebar.php';
               </tr>
             <?php foreach ($jenis['rows'] as $r): ?>
               <tr>
-                <td></td>
-                <td class="text-center">-</td>
-                <td><?= htmlspecialchars($r['nama_barang']) ?></td>
+                <td class="text-center"><?= ($jenis_no-1) . '.' . ($item_no++) ?></td>
+                <td colspan="2"><?= htmlspecialchars($r['nama_barang']) ?></td>
                 <?php $kode_b = splitKode($r['kode_barang']); foreach ($kode_b as $kb): ?>
                   <td class="text-center" style="font-size:0.75rem;"><?= htmlspecialchars($kb) ?></td>
                 <?php endforeach; ?>

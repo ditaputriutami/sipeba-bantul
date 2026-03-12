@@ -96,7 +96,7 @@ if ($use_date_filter) {
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
                 JOIN barang b2 ON pr.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND pr.status = 'disetujui' AND pr.tanggal < '$f_dari_tanggal' $where_bagian
+                WHERE b2.id_jenis_barang = j.id AND pd.status = 'disetujui' AND pr.tanggal < '$f_dari_tanggal' $where_bagian
             ) as saldo_awal,
             -- Penambahan (Dalam range tanggal)
             (
@@ -111,7 +111,7 @@ if ($use_date_filter) {
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
                 JOIN barang b2 ON pr.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND pr.status = 'disetujui' AND pr.tanggal BETWEEN '$f_dari_tanggal' AND '$f_sampai_tanggal' $where_bagian
+                WHERE b2.id_jenis_barang = j.id AND pd.status = 'disetujui' AND pr.tanggal BETWEEN '$f_dari_tanggal' AND '$f_sampai_tanggal' $where_bagian
             ) as pengurangan,
             -- Keterangan (Ambil dari Stock Opname dalam range tanggal)
             (
@@ -141,7 +141,7 @@ if ($use_date_filter) {
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
                 JOIN barang b2 ON pr.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND pr.status = 'disetujui' AND YEAR(pr.tanggal) < $f_tahun $where_bagian
+                WHERE b2.id_jenis_barang = j.id AND pd.status = 'disetujui' AND YEAR(pr.tanggal) < $f_tahun $where_bagian
             ) as saldo_awal,
             -- Penambahan (Tahun filter)
             (
@@ -156,7 +156,7 @@ if ($use_date_filter) {
                 FROM pengurangan_detail pd
                 JOIN pengurangan pr ON pd.id_pengurangan = pr.id
                 JOIN barang b2 ON pr.id_barang = b2.id
-                WHERE b2.id_jenis_barang = j.id AND pr.status = 'disetujui' AND YEAR(pr.tanggal) = $f_tahun $where_bagian
+                WHERE b2.id_jenis_barang = j.id AND pd.status = 'disetujui' AND YEAR(pr.tanggal) = $f_tahun $where_bagian
             ) as pengurangan,
             -- Keterangan (Ambil dari Stock Opname tahun filter)
             (

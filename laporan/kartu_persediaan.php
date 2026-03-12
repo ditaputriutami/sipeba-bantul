@@ -93,7 +93,7 @@ if ($f_id_barang) {
         FROM pengurangan pr
         JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
         WHERE pr.id_barang = $f_id_barang
-          AND pr.status IN ('disetujui', 'disetujui sebagian')
+          AND pd.status = 'disetujui'
           AND pr.tanggal BETWEEN '$f_dari' AND '$f_sampai'
           $bagianWherePeng
 
@@ -111,7 +111,7 @@ if ($f_id_barang) {
         SELECT
             COALESCE((SELECT SUM(p.jumlah) FROM penerimaan p WHERE p.id_barang = $f_id_barang AND p.status = 'disetujui' AND p.tanggal < '$f_dari' $kondisiSaldoAwalPen), 0)
             -
-            COALESCE((SELECT SUM(pd.jumlah_dipotong) FROM pengurangan pr JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id WHERE pr.id_barang = $f_id_barang AND pr.status IN ('disetujui','disetujui sebagian') AND pr.tanggal < '$f_dari' $kondisiSaldoAwalPeng), 0)
+            COALESCE((SELECT SUM(pd.jumlah_dipotong) FROM pengurangan pr JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id WHERE pr.id_barang = $f_id_barang AND pd.status = 'disetujui' AND pr.tanggal < '$f_dari' $kondisiSaldoAwalPeng), 0)
             AS saldo_awal
     ");
     $saldoAwal = (int)$qSaldoAwal->fetch_assoc()['saldo_awal'];
