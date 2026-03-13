@@ -146,9 +146,7 @@ if ($f_id_barang) {
             p.harga_satuan AS harga_satuan,
             (p.jumlah * p.harga_satuan) AS jumlah_harga,
             p.id           AS sort_id,
-        COALESCE(p.created_at, CONCAT(p.tanggal, ' 00:00:00')) AS waktu_input,
-        COALESCE(p.created_at, CONCAT(p.tanggal, ' 00:00:00')) AS sort_batch_waktu,
-        p.id           AS sort_batch_id
+            p.created_at   AS waktu_input
         FROM penerimaan p
         WHERE p.id_barang = $f_id_barang
           AND p.status = 'disetujui'
@@ -159,21 +157,6 @@ if ($f_id_barang) {
 
   $queryKeluar = "
         SELECT
-<<<<<<< HEAD
-            'keluar'          AS tipe,
-            pr.tanggal        AS tanggal,
-            pr.no_permintaan  AS nomor_dokumen,
-            pd.jumlah_dipotong AS qty,
-            pd.harga_satuan   AS harga_satuan,
-            (pd.jumlah_dipotong * pd.harga_satuan) AS jumlah_harga,
-            pr.id             AS sort_id,
-            COALESCE(pr.created_at, CONCAT(pr.tanggal, ' 00:00:00')) AS waktu_input,
-            COALESCE(pen.created_at, CONCAT(pen.tanggal, ' 00:00:00')) AS sort_batch_waktu,
-            pen.id            AS sort_batch_id
-        FROM pengurangan pr
-        JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
-        LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
-=======
           pr.id            AS sort_id,
           pr.tanggal       AS tanggal,
           pr.no_permintaan AS nomor_dokumen,
@@ -181,7 +164,6 @@ if ($f_id_barang) {
           pr.created_at    AS waktu_input
         FROM pengurangan pr
         LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
->>>>>>> fix
         WHERE pr.id_barang = $f_id_barang
           AND pr.status IN ('disetujui', 'disetujui sebagian')
           AND pr.tanggal <= '$f_sampai'
@@ -206,18 +188,6 @@ if ($f_id_barang) {
     ];
   }
 
-<<<<<<< HEAD
-        ORDER BY
-          sort_batch_waktu ASC,
-          sort_batch_id ASC,
-          CASE WHEN tipe = 'masuk' THEN 0 ELSE 1 END ASC,
-          waktu_input ASC,
-          sort_id ASC
-    ";
-    $res = $conn->query($query);
-    while ($row = $res->fetch_assoc()) {
-        $kartuData[] = $row;
-=======
   $resKeluar = $conn->query($queryKeluar);
   while ($row = $resKeluar->fetch_assoc()) {
     $timeline[] = [
@@ -237,7 +207,6 @@ if ($f_id_barang) {
     $timeCompare = strcmp((string)($a['waktu_input'] ?? ''), (string)($b['waktu_input'] ?? ''));
     if ($timeCompare !== 0) {
       return $timeCompare;
->>>>>>> fix
     }
 
     $idCompare = ((int)($a['sort_id'] ?? 0)) <=> ((int)($b['sort_id'] ?? 0));
