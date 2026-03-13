@@ -72,7 +72,9 @@ if ($f_id_barang) {
             p.harga_satuan AS harga_satuan,
             (p.jumlah * p.harga_satuan) AS jumlah_harga,
             p.id           AS sort_id,
-            p.created_at   AS waktu_input
+        COALESCE(p.created_at, CONCAT(p.tanggal, ' 00:00:00')) AS waktu_input,
+        COALESCE(p.created_at, CONCAT(p.tanggal, ' 00:00:00')) AS sort_batch_waktu,
+        p.id           AS sort_batch_id
         FROM penerimaan p
         WHERE p.id_barang = $f_id_barang
           AND p.status = 'disetujui'
@@ -89,15 +91,23 @@ if ($f_id_barang) {
             pd.harga_satuan   AS harga_satuan,
             (pd.jumlah_dipotong * pd.harga_satuan) AS jumlah_harga,
             pr.id             AS sort_id,
-            pr.created_at     AS waktu_input
+            COALESCE(pr.created_at, CONCAT(pr.tanggal, ' 00:00:00')) AS waktu_input,
+            COALESCE(pen.created_at, CONCAT(pen.tanggal, ' 00:00:00')) AS sort_batch_waktu,
+            pen.id            AS sort_batch_id
         FROM pengurangan pr
         JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
+        LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
         WHERE pr.id_barang = $f_id_barang
           AND pd.status = 'disetujui'
           AND pr.tanggal BETWEEN '$f_dari' AND '$f_sampai'
           $bagianWherePeng
 
-        ORDER BY tanggal ASC, waktu_input ASC, sort_id ASC
+        ORDER BY
+          sort_batch_waktu ASC,
+          sort_batch_id ASC,
+          CASE WHEN tipe = 'masuk' THEN 0 ELSE 1 END ASC,
+          waktu_input ASC,
+          sort_id ASC
     ";
     $res = $conn->query($query);
     while ($row = $res->fetch_assoc()) {
