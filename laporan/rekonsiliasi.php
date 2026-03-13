@@ -191,8 +191,20 @@ if (isset($_GET['export'])) {
   header('Content-Disposition: attachment; filename="rekonsiliasi_' . $periodeLabel . '.xls"');
   header('Pragma: no-cache');
   echo "\xEF\xBB\xBF";
+  echo '<html><head><meta charset="UTF-8"><style>
+    html, body { background:#fff !important; margin:0; padding:0; }
+    table { background:#fff !important; }
+    td, th { background-clip:padding-box; }
+  </style></head><body>';
 ?>
-<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:11pt;">
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:11pt; width:100%; table-layout:fixed;">
+  <colgroup>
+    <col style="width:8%;">
+    <col style="width:42%;">
+    <col style="width:16.5%;">
+    <col style="width:16.5%;">
+    <col style="width:17%;">
+  </colgroup>
   <tr>
     <td colspan="5" align="center" style="font-size:14pt; font-weight:bold; border:none; padding:15px;">BERITA ACARA REKONSILIASI</td>
   </tr>
@@ -205,12 +217,12 @@ if (isset($_GET['export'])) {
   <tr>
     <td colspan="5" style="border:none; padding:3px;"></td>
   </tr>
-  <tr style="font-weight:bold; background-color:#cccccc;">
-    <td align="center" style="border:1px solid #000; padding:10px; width:8%;">NO.</td>
-    <td align="center" style="border:1px solid #000; padding:10px; width:35%;">URAIAN</td>
-    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">PENERIMAAN</td>
-    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">PENGURANGAN</td>
-    <td align="center" style="border:1px solid #000; padding:10px; width:19%;">SALDO AKHIR</td>
+  <tr style="font-weight:bold;">
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#cccccc;">NO.</td>
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#cccccc;">URAIAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#cccccc;">PENERIMAAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#cccccc;">PENGURANGAN</td>
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#cccccc;">SALDO AKHIR</td>
   </tr>
 <?php
   if (empty($dataByJenis)) {
@@ -223,9 +235,9 @@ if (isset($_GET['export'])) {
     foreach ($dataByJenis as $jenis) {
         $item_no = 1;
 ?>
-  <tr style="font-weight:bold; background-color:#e8e8e8;">
-    <td align="center" style="border:1px solid #000; padding:10px;"><?= $no++ ?></td>
-    <td colspan="4" style="border:1px solid #000; padding:10px;"><?= strtoupper(htmlspecialchars($jenis['nama_jenis'])) ?></td>
+  <tr style="font-weight:bold;">
+    <td align="center" style="border:1px solid #000; padding:10px; background-color:#e8e8e8;"><?= $no++ ?></td>
+    <td colspan="4" style="border:1px solid #000; padding:10px; background-color:#e8e8e8;"><?= strtoupper(htmlspecialchars($jenis['nama_jenis'])) ?></td>
   </tr>
 <?php
       foreach ($jenis['barang'] as $brg) {
@@ -244,17 +256,18 @@ if (isset($_GET['export'])) {
       }
     }
 ?>
-  <tr style="font-weight:bold; background-color:#e9ecef;">
-    <td colspan="2" align="center" style="border:1px solid #000; padding:10px;">JUMLAH</td>
-    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_penerimaan ?></td>
-    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_pengurangan ?></td>
-    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0';" x:num><?= (int)$total_saldo ?></td>
+  <tr style="font-weight:bold;">
+    <td colspan="2" align="center" style="border:1px solid #000; padding:10px; background-color:#e9ecef;">JUMLAH</td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0'; background-color:#e9ecef;" x:num><?= (int)$total_penerimaan ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0'; background-color:#e9ecef;" x:num><?= (int)$total_pengurangan ?></td>
+    <td style="border:1px solid #000; padding:8px; text-align:right; mso-number-format:'#,##0'; background-color:#e9ecef;" x:num><?= (int)$total_saldo ?></td>
   </tr>
 <?php
   }
 ?>
 </table>
 <?php
+  echo '</body></html>';
   exit;
 }
 

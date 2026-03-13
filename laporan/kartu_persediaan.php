@@ -53,8 +53,83 @@ $labelBagianLaporan = ($namaBagianLaporan === 'Sekretariat Daerah' || preg_match
     ? $namaBagianLaporan
     : 'Bagian ' . $namaBagianLaporan;
 
+if (!function_exists('formatFifoLines')) {
+  function formatFifoLines(array $details, string $field): array
+  {
+    $lines = [];
+    foreach ($details as $detail) {
+      $value = $detail[$field] ?? 0;
+      $lines[] = number_format((float)$value, 0, ',', '.');
+    }
+
+    return $lines;
+  }
+}
+
+if (!function_exists('consumeFifoBatches')) {
+  function consumeFifoBatches(array &$batchQueue, int $qty): array
+  {
+    $remaining = $qty;
+    $details = [];
+    $totalNilai = 0;
+
+    foreach ($batchQueue as &$batch) {
+      if ($remaining <= 0) {
+        break;
+      }
+
+      $qtyRemaining = (int)($batch['qty_remaining'] ?? 0);
+      if ($qtyRemaining <= 0) {
+        continue;
+      }
+
+      $take = min($remaining, $qtyRemaining);
+      $batch['qty_remaining'] = $qtyRemaining - $take;
+      $nilai = $take * (float)$batch['harga_satuan'];
+
+      $details[] = [
+        'qty' => $take,
+        'harga_satuan' => (float)$batch['harga_satuan'],
+        'jumlah_harga' => $nilai,
+      ];
+      $totalNilai += $nilai;
+      $remaining -= $take;
+    }
+    unset($batch);
+
+    $batchQueue = array_values(array_filter($batchQueue, static function ($batch) {
+      return (int)($batch['qty_remaining'] ?? 0) > 0;
+    }));
+
+    if ($remaining > 0) {
+      $details[] = [
+        'qty' => $remaining,
+        'harga_satuan' => 0,
+        'jumlah_harga' => 0,
+        'shortage' => true,
+      ];
+    }
+
+    return [
+      'details' => $details,
+      'total_nilai' => $totalNilai,
+      'shortage_qty' => $remaining,
+    ];
+  }
+}
+
+if (!function_exists('sumQueueStock')) {
+  function sumQueueStock(array $batchQueue): int
+  {
+    return array_sum(array_map(static function ($batch) {
+      return (int)($batch['qty_remaining'] ?? 0);
+    }, $batchQueue));
+  }
+}
+
 // --- Query data kartu persediaan ---
 $kartuData = [];
+$saldoAwal = 0;
 if ($f_id_barang) {
     $bagianWherePen   = $f_bagian ? "AND p.id_bagian = $f_bagian" : '';
     $bagianWherePeng  = $f_bagian ? "AND pr.id_bagian = $f_bagian" : '';
@@ -63,9 +138,8 @@ if ($f_id_barang) {
         $bagianWherePeng = "AND pr.id_bagian = $id_bagian";
     }
 
-    $query = "
+  $queryMasuk = "
         SELECT
-            'masuk'        AS tipe,
             p.tanggal      AS tanggal,
             p.no_faktur    AS nomor_dokumen,
             p.jumlah       AS qty,
@@ -78,12 +152,14 @@ if ($f_id_barang) {
         FROM penerimaan p
         WHERE p.id_barang = $f_id_barang
           AND p.status = 'disetujui'
-          AND p.tanggal BETWEEN '$f_dari' AND '$f_sampai'
+          AND p.tanggal <= '$f_sampai'
           $bagianWherePen
+        ORDER BY p.tanggal ASC, p.created_at ASC, p.id ASC
+      ";
 
-        UNION ALL
-
+  $queryKeluar = "
         SELECT
+<<<<<<< HEAD
             'keluar'          AS tipe,
             pr.tanggal        AS tanggal,
             pr.no_permintaan  AS nomor_dokumen,
@@ -97,11 +173,40 @@ if ($f_id_barang) {
         FROM pengurangan pr
         JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
         LEFT JOIN penerimaan pen ON pen.id = pd.id_penerimaan
+=======
+          pr.id            AS sort_id,
+          pr.tanggal       AS tanggal,
+          pr.no_permintaan AS nomor_dokumen,
+          COALESCE(SUM(CASE WHEN pd.status = 'disetujui' THEN pd.jumlah_dipotong ELSE 0 END), 0) AS qty,
+          pr.created_at    AS waktu_input
+        FROM pengurangan pr
+        LEFT JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id
+>>>>>>> fix
         WHERE pr.id_barang = $f_id_barang
-          AND pd.status = 'disetujui'
-          AND pr.tanggal BETWEEN '$f_dari' AND '$f_sampai'
+          AND pr.status IN ('disetujui', 'disetujui sebagian')
+          AND pr.tanggal <= '$f_sampai'
           $bagianWherePeng
+        GROUP BY pr.id, pr.tanggal, pr.no_permintaan, pr.created_at
+        HAVING qty > 0
+        ORDER BY pr.tanggal ASC, pr.created_at ASC, pr.id ASC
+      ";
+  $timeline = [];
+  $resMasuk = $conn->query($queryMasuk);
+  while ($row = $resMasuk->fetch_assoc()) {
+    $timeline[] = [
+      'tipe' => 'masuk',
+      'tanggal' => $row['tanggal'],
+      'nomor_dokumen' => $row['nomor_dokumen'],
+      'qty' => (int)$row['qty'],
+      'harga_satuan' => (float)$row['harga_satuan'],
+      'jumlah_harga' => (float)$row['jumlah_harga'],
+      'sort_id' => (int)$row['sort_id'],
+      'waktu_input' => $row['waktu_input'],
+      'fifo_details' => [],
+    ];
+  }
 
+<<<<<<< HEAD
         ORDER BY
           sort_batch_waktu ASC,
           sort_batch_id ASC,
@@ -112,19 +217,85 @@ if ($f_id_barang) {
     $res = $conn->query($query);
     while ($row = $res->fetch_assoc()) {
         $kartuData[] = $row;
+=======
+  $resKeluar = $conn->query($queryKeluar);
+  while ($row = $resKeluar->fetch_assoc()) {
+    $timeline[] = [
+      'tipe' => 'keluar',
+      'tanggal' => $row['tanggal'],
+      'nomor_dokumen' => $row['nomor_dokumen'],
+      'qty' => (int)$row['qty'],
+      'harga_satuan' => 0,
+      'jumlah_harga' => 0,
+      'sort_id' => (int)$row['sort_id'],
+      'waktu_input' => $row['waktu_input'],
+      'fifo_details' => [],
+    ];
+  }
+
+  usort($timeline, static function ($a, $b) {
+    $timeCompare = strcmp((string)($a['waktu_input'] ?? ''), (string)($b['waktu_input'] ?? ''));
+    if ($timeCompare !== 0) {
+      return $timeCompare;
+>>>>>>> fix
     }
 
-    // Hitung saldo awal (sebelum periode)
-    $kondisiSaldoAwalPen  = $f_bagian ? "AND p.id_bagian = $f_bagian" : ($role !== 'superadmin' && (int)$id_bagian !== 9 ? "AND p.id_bagian = $id_bagian" : '');
-    $kondisiSaldoAwalPeng = $f_bagian ? "AND pr.id_bagian = $f_bagian" : ($role !== 'superadmin' && (int)$id_bagian !== 9 ? "AND pr.id_bagian = $id_bagian" : '');
-    $qSaldoAwal = $conn->query("
-        SELECT
-            COALESCE((SELECT SUM(p.jumlah) FROM penerimaan p WHERE p.id_barang = $f_id_barang AND p.status = 'disetujui' AND p.tanggal < '$f_dari' $kondisiSaldoAwalPen), 0)
-            -
-            COALESCE((SELECT SUM(pd.jumlah_dipotong) FROM pengurangan pr JOIN pengurangan_detail pd ON pd.id_pengurangan = pr.id WHERE pr.id_barang = $f_id_barang AND pd.status = 'disetujui' AND pr.tanggal < '$f_dari' $kondisiSaldoAwalPeng), 0)
-            AS saldo_awal
-    ");
-    $saldoAwal = (int)$qSaldoAwal->fetch_assoc()['saldo_awal'];
+    $idCompare = ((int)($a['sort_id'] ?? 0)) <=> ((int)($b['sort_id'] ?? 0));
+    if ($idCompare !== 0) {
+      return $idCompare;
+    }
+
+    if (($a['tipe'] ?? '') !== ($b['tipe'] ?? '')) {
+      return ($a['tipe'] === 'masuk') ? -1 : 1;
+    }
+
+    return strcmp((string)($a['tanggal'] ?? ''), (string)($b['tanggal'] ?? ''));
+  });
+
+  $batchQueue = [];
+  foreach ($timeline as $row) {
+    if ($row['tipe'] === 'masuk') {
+      $batchQueue[] = [
+        'qty_remaining' => (int)$row['qty'],
+        'harga_satuan' => (float)$row['harga_satuan'],
+        'tanggal' => $row['tanggal'],
+        'sort_id' => (int)$row['sort_id'],
+      ];
+
+      if ($row['tanggal'] >= $f_dari) {
+        $kartuData[] = $row;
+      }
+      continue;
+    }
+
+    $alloc = consumeFifoBatches($batchQueue, (int)$row['qty']);
+    $row['jumlah_harga'] = (float)$alloc['total_nilai'];
+    $row['fifo_details'] = $alloc['details'];
+    $row['harga_satuan'] = (float)($alloc['details'][0]['harga_satuan'] ?? 0);
+
+    if ($row['tanggal'] >= $f_dari) {
+      $kartuData[] = $row;
+    }
+  }
+
+  $saldoAwal = 0;
+  $openingQueue = [];
+  foreach ($timeline as $row) {
+    if ($row['tanggal'] >= $f_dari) {
+      continue;
+    }
+
+    if ($row['tipe'] === 'masuk') {
+      $openingQueue[] = [
+        'qty_remaining' => (int)$row['qty'],
+        'harga_satuan' => (float)$row['harga_satuan'],
+      ];
+      continue;
+    }
+
+    consumeFifoBatches($openingQueue, (int)$row['qty']);
+  }
+  $saldoAwal = sumQueueStock($openingQueue);
 }
 
 // --- Export Excel ---
@@ -138,20 +309,20 @@ if (isset($_GET['export']) && $f_id_barang) {
 ?>
 <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse; font-family:Calibri; font-size:10pt;">
   <tr>
-    <td colspan="9" style="text-align:center; font-weight:bold; font-size:13pt; border:none;">KARTU PERSEDIAAN BARANG</td>
+    <td colspan="10" style="text-align:center; font-weight:bold; font-size:13pt; border:none;">KARTU PERSEDIAAN BARANG</td>
   </tr>
   <tr>
-    <td colspan="9" style="text-align:center; font-weight:bold; font-size:11pt; border:none;"><?= htmlspecialchars($infoBarang['nama_barang']) ?></td>
+    <td colspan="10" style="text-align:center; font-weight:bold; font-size:11pt; border:none;"><?= htmlspecialchars($infoBarang['nama_barang']) ?></td>
   </tr>
   <tr>
-    <td colspan="9" style="text-align:center; font-size:10pt; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></td>
+    <td colspan="10" style="text-align:center; font-size:10pt; border:none;"><?= htmlspecialchars($labelBagianLaporan) ?></td>
   </tr>
   <tr>
-    <td colspan="9" style="text-align:center; font-size:10pt; border:none;">Periode: <?= date('d/m/Y', strtotime($f_dari)) ?> s.d. <?= date('d/m/Y', strtotime($f_sampai)) ?></td>
+    <td colspan="10" style="text-align:center; font-size:10pt; border:none;">Periode: <?= date('d/m/Y', strtotime($f_dari)) ?> s.d. <?= date('d/m/Y', strtotime($f_sampai)) ?></td>
   </tr>
-  <tr><td colspan="9" style="border:none;"></td></tr>
+  <tr><td colspan="10" style="border:none;"></td></tr>
   <tr style="background-color:#dce6f1; font-weight:bold; text-align:center;">
-    <th style="border:1px solid #000; padding:5px;">NO</th>
+    <th style="border:1px solid #000; padding:5px;">NO URUT INPUT</th>
     <th style="border:1px solid #000; padding:5px;">TANGGAL</th>
     <th style="border:1px solid #000; padding:5px;">NOMOR DOKUMEN</th>
     <th style="border:1px solid #000; padding:5px;">UNIT MASUK</th>
@@ -186,10 +357,13 @@ if (isset($_GET['export']) && $f_id_barang) {
           $totalMasuk += $r['qty'];
           $totalNilaiMasuk += $r['jumlah_harga'];
       } else {
-          $saldoBerjalan -= $r['qty'];
+        $saldoBerjalan = max(0, $saldoBerjalan - $r['qty']);
           $totalKeluar += $r['qty'];
           $totalNilaiKeluar += $r['jumlah_harga'];
       }
+      $fifoQtyLines = formatFifoLines($r['fifo_details'] ?? [], 'qty');
+      $fifoHargaLines = formatFifoLines($r['fifo_details'] ?? [], 'harga_satuan');
+      $fifoJumlahLines = formatFifoLines($r['fifo_details'] ?? [], 'jumlah_harga');
   ?>
   <tr>
     <td style="text-align:center; border:1px solid #000; padding:4px;"><?= $no++ ?></td>
@@ -206,9 +380,33 @@ if (isset($_GET['export']) && $f_id_barang) {
       <td style="border:1px solid #000; padding:4px;"></td>
       <td style="border:1px solid #000; padding:4px;"></td>
       <td style="border:1px solid #000; padding:4px;"></td>
-      <td style="text-align:center; border:1px solid #000; padding:4px; mso-number-format:'0';"><?= $r['qty'] ?></td>
-      <td style="text-align:right; border:1px solid #000; padding:4px; mso-number-format:'#,##0';"><?= (int)$r['harga_satuan'] ?></td>
-      <td style="text-align:right; border:1px solid #000; padding:4px; mso-number-format:'#,##0';"><?= (int)$r['jumlah_harga'] ?></td>
+      <td style="text-align:center; border:1px solid #000; padding:4px; mso-number-format:'0';">
+        <?php if (!empty($fifoQtyLines)): ?>
+          <?php foreach ($fifoQtyLines as $line): ?>
+            <div><?= $line ?></div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <?= (int)$r['qty'] ?>
+        <?php endif; ?>
+      </td>
+      <td style="text-align:right; border:1px solid #000; padding:4px; mso-number-format:'#,##0';">
+        <?php if (!empty($fifoHargaLines)): ?>
+          <?php foreach ($fifoHargaLines as $line): ?>
+            <div><?= $line ?></div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <?= (int)$r['harga_satuan'] ?>
+        <?php endif; ?>
+      </td>
+      <td style="text-align:right; border:1px solid #000; padding:4px; mso-number-format:'#,##0';">
+        <?php if (!empty($fifoJumlahLines)): ?>
+          <?php foreach ($fifoJumlahLines as $line): ?>
+            <div><?= $line ?></div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <?= (int)$r['jumlah_harga'] ?>
+        <?php endif; ?>
+      </td>
     <?php endif; ?>
     <td style="text-align:center; border:1px solid #000; padding:4px; mso-number-format:'0';"><?= $saldoBerjalan ?></td>
   </tr>
@@ -321,7 +519,7 @@ include BASE_PATH . '/includes/sidebar.php';
         <table class="table table-bordered table-sm align-middle mb-0" style="font-size:.8rem;">
           <thead class="text-center align-middle table-primary">
             <tr>
-              <th rowspan="2">NO</th>
+              <th rowspan="2">NO URUT INPUT</th>
               <th rowspan="2">TANGGAL</th>
               <th rowspan="2">NOMOR DOKUMEN</th>
               <th colspan="3" style="background-color:#cfe2ff;">MASUK</th>
@@ -373,10 +571,13 @@ include BASE_PATH . '/includes/sidebar.php';
                       $totalMasuk += $r['qty'];
                       $totalNilaiMasuk += $r['jumlah_harga'];
                   } else {
-                      $saldoBerjalan -= $r['qty'];
+                    $saldoBerjalan = max(0, $saldoBerjalan - $r['qty']);
                       $totalKeluar += $r['qty'];
                       $totalNilaiKeluar += $r['jumlah_harga'];
                   }
+                  $fifoQtyLines = formatFifoLines($r['fifo_details'] ?? [], 'qty');
+                  $fifoHargaLines = formatFifoLines($r['fifo_details'] ?? [], 'harga_satuan');
+                  $fifoJumlahLines = formatFifoLines($r['fifo_details'] ?? [], 'jumlah_harga');
               ?>
                 <tr class="text-dark <?= $r['tipe'] === 'masuk' ? '' : '' ?>">
                   <td class="text-center"><?= $no++ ?></td>
@@ -393,9 +594,33 @@ include BASE_PATH . '/includes/sidebar.php';
                     <td style="background-color:#f0f7ff;"></td>
                     <td style="background-color:#f0f7ff;"></td>
                     <td style="background-color:#f0f7ff;"></td>
-                    <td class="text-center" style="background-color:#fff5f5;"><?= number_format($r['qty'], 0, ',', '.') ?></td>
-                    <td class="text-end" style="background-color:#fff5f5;"><?= number_format($r['harga_satuan'], 0, ',', '.') ?></td>
-                    <td class="text-end fw-semibold" style="background-color:#fff5f5;"><?= number_format($r['jumlah_harga'], 0, ',', '.') ?></td>
+                    <td class="text-center" style="background-color:#fff5f5;">
+                      <?php if (!empty($fifoQtyLines)): ?>
+                        <?php foreach ($fifoQtyLines as $line): ?>
+                          <div><?= $line ?></div>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        <?= number_format($r['qty'], 0, ',', '.') ?>
+                      <?php endif; ?>
+                    </td>
+                    <td class="text-end" style="background-color:#fff5f5;">
+                      <?php if (!empty($fifoHargaLines)): ?>
+                        <?php foreach ($fifoHargaLines as $line): ?>
+                          <div><?= $line ?></div>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        <?= number_format($r['harga_satuan'], 0, ',', '.') ?>
+                      <?php endif; ?>
+                    </td>
+                    <td class="text-end fw-semibold" style="background-color:#fff5f5;">
+                      <?php if (!empty($fifoJumlahLines)): ?>
+                        <?php foreach ($fifoJumlahLines as $line): ?>
+                          <div><?= $line ?></div>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        <?= number_format($r['jumlah_harga'], 0, ',', '.') ?>
+                      <?php endif; ?>
+                    </td>
                   <?php endif; ?>
                   <td class="text-center fw-semibold <?= $saldoBerjalan < 0 ? 'text-danger' : '' ?>"><?= number_format($saldoBerjalan, 0, ',', '.') ?></td>
                 </tr>

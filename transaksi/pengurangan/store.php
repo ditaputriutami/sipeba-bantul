@@ -36,7 +36,7 @@ if (!$id_barang)     $errors[] = 'Barang wajib dipilih.';
 if ($jumlah < 1)     $errors[] = 'Jumlah minimal 1.';
 if (!$id_bagian)     $errors[] = 'Bagian wajib diisi.';
 if (!in_array($jenis, ['penghapusan', 'mutasi_keluar'])) {
-    $errors[] = 'Jenis pengurangan tidak valid.';
+    $errors[] = 'Jenis pengeluaran tidak valid.';
 }
 
 if (!empty($errors)) {
@@ -58,17 +58,17 @@ if ($jumlah > $stok) {
 $batchQuery = $conn->prepare("
     SELECT id, sisa_stok, harga_satuan, tanggal
     FROM penerimaan
-    WHERE id_barang=? AND id_bagian=? AND status='disetujui' AND sisa_stok > 0
+    WHERE id_barang=? AND id_bagian=? AND status='disetujui' AND tanggal <= ? AND sisa_stok > 0
     ORDER BY tanggal ASC, id ASC
 ");
-$batchQuery->bind_param('ii', $id_barang, $id_bagian);
+$batchQuery->bind_param('iis', $id_barang, $id_bagian, $tanggal);
 $batchQuery->execute();
 $batches = $batchQuery->get_result()->fetch_all(MYSQLI_ASSOC);
 $batchQuery->close();
 
 $totalSisa = array_sum(array_column($batches, 'sisa_stok'));
 if ($jumlah > $totalSisa) {
-    setFlash('error', "Jumlah melebihi stok yang tersedia di batch penerimaan ($totalSisa).");
+    setFlash('error', "Jumlah melebihi stok FIFO yang tersedia sampai tanggal transaksi ($totalSisa).");
     header('Location: create.php');
     exit;
 }
@@ -113,7 +113,7 @@ try {
     $detailStmt->close();
 
     $conn->commit();
-    setFlash('success', "Pengurangan berhasil disimpan. Menunggu persetujuan Kepala Bagian.");
+    setFlash('success', "Pengeluaran berhasil disimpan. Menunggu persetujuan Kepala Bagian.");
 } catch (Exception $e) {
     $conn->rollback();
     setFlash('error', 'Gagal menyimpan: ' . $e->getMessage());

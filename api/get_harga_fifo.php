@@ -12,8 +12,9 @@ header('Content-Type: application/json');
 $id_barang = (int)($_GET['id_barang'] ?? 0);
 $id_bagian = (int)($_GET['id_bagian'] ?? getUserBagian());
 $jumlah = (int)($_GET['jumlah'] ?? 0);
+$tanggal = $_GET['tanggal'] ?? date('Y-m-d');
 
-if (!$id_barang || !$id_bagian || $jumlah <= 0) {
+if (!$id_barang || !$id_bagian || $jumlah <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
     echo json_encode([
         'success' => false,
         'message' => 'Parameter tidak lengkap',
@@ -32,10 +33,11 @@ $batchQuery = $conn->prepare("
     WHERE id_barang = ? 
       AND id_bagian = ? 
       AND status = 'disetujui' 
+            AND tanggal <= ?
       AND sisa_stok > 0
     ORDER BY tanggal ASC, id ASC
 ");
-$batchQuery->bind_param('ii', $id_barang, $id_bagian);
+$batchQuery->bind_param('iis', $id_barang, $id_bagian, $tanggal);
 $batchQuery->execute();
 $batches = $batchQuery->get_result()->fetch_all(MYSQLI_ASSOC);
 $batchQuery->close();
@@ -46,10 +48,11 @@ $total_stok = array_sum(array_column($batches, 'sisa_stok'));
 if ($total_stok < $jumlah) {
     echo json_encode([
         'success' => false,
-        'message' => 'Stok tidak mencukupi',
+        'message' => 'Stok tidak mencukupi pada tanggal transaksi',
         'harga_satuan' => 0,
         'jumlah_harga' => 0,
         'stok_tersedia' => $total_stok,
+        'tanggal' => $tanggal,
         'details' => []
     ]);
     exit;
@@ -92,5 +95,6 @@ echo json_encode([
     'jumlah_harga' => $total_nilai,
     'details' => $details,
     'multiple_batch' => count($details) > 1, // Indikator ada multiple batch
-    'stok_tersedia' => $total_stok
+    'stok_tersedia' => $total_stok,
+    'tanggal' => $tanggal
 ]);
