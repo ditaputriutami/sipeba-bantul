@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/bootstrap.php';
 requireRole(['pengurus', 'kepala', 'superadmin']);
-$pageTitle = 'Pengurangan Barang';
+$pageTitle = 'Pengeluaran Barang';
 $user = getCurrentUser();
 $role = getUserRole();
 $id_bagian = getUserBagian();
@@ -41,7 +41,7 @@ include BASE_PATH . '/includes/sidebar.php';
 <div class="main-content">
   <div class="topbar">
     <button class="sidebar-toggle-btn me-3" id="mainSidebarToggle"><i class="bi bi-list fs-4"></i></button>
-    <div class="topbar-title"><i class="bi bi-box-arrow-up me-2"></i>Pengurangan Barang</div>
+    <div class="topbar-title"><i class="bi bi-box-arrow-up me-2"></i>Pengeluaran Barang</div>
   </div>
   <div class="page-content">
     <?php $flash = getFlash();
@@ -62,14 +62,14 @@ include BASE_PATH . '/includes/sidebar.php';
             <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-funnel"></i> Filter</button>
           </form>
           <?php if (in_array($role, ['pengurus', 'kepala'])): ?>
-            <a href="create.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Pengurangan</a>
+            <a href="create.php" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Tambah Pengeluaran</a>
           <?php endif; ?>
         </div>
       </div>
     </div>
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
-        <span><i class="bi bi-list-ul me-2"></i>Daftar Transaksi Pengurangan</span>
+        <span><i class="bi bi-list-ul me-2"></i>Daftar Transaksi Pengeluaran</span>
         <input type="text" class="form-control form-control-sm" style="width:200px" data-table-search="pengTable" placeholder="Cari...">
       </div>
       <div class="table-wrapper">
@@ -155,7 +155,7 @@ include BASE_PATH . '/includes/sidebar.php';
                       <a href="edit.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-primary btn-icon me-1" title="Edit"><i class="bi bi-pencil"></i></a>
                       <form method="POST" action="delete.php" class="d-inline">
                         <input type="hidden" name="id" value="<?= $p['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengurangan ini?" title="Hapus"><i class="bi bi-trash"></i></button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" data-confirm="Hapus pengeluaran ini?" title="Hapus"><i class="bi bi-trash"></i></button>
                       </form>
                     <?php else: ?>
                       <span class="text-muted" title="Tidak dapat diedit/dihapus"><i class="bi bi-lock"></i></span>

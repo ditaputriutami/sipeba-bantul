@@ -76,7 +76,7 @@ function isActive(string $path): string
           <i class="bi bi-box-arrow-in-down"></i><span>Penerimaan Barang</span>
         </a>
         <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php" class="menu-item <?= isActive('/pengurangan/') ?>">
-          <i class="bi bi-box-arrow-up"></i><span>Pengurangan Barang</span>
+          <i class="bi bi-box-arrow-up"></i><span>Pengeluaran Barang</span>
         </a>
       </div>
     <?php endif; ?>

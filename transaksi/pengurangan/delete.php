@@ -14,12 +14,12 @@ if ($id) {
             // Hapus detail FIFO terlebih dahulu (FK constraint)
             $conn->query("DELETE FROM pengurangan_detail WHERE id_pengurangan=$id");
             $conn->query("DELETE FROM pengurangan WHERE id=$id");
-            setFlash('success','Pengurangan berhasil dihapus.');
+            setFlash('success','Pengeluaran berhasil dihapus.');
         } else {
             setFlash('error','Akses ditolak.');
         }
     } else {
-        setFlash('error','Pengurangan tidak ditemukan.');
+        setFlash('error','Pengeluaran tidak ditemukan.');
     }
 }
 header('Location: index.php'); exit;

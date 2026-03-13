@@ -9,7 +9,7 @@ $id_bagian = getUserBagian();
 // Get ID from URL
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) {
-    setFlash('error', 'ID pengurangan tidak valid.');
+    setFlash('error', 'ID pengeluaran tidak valid.');
     header('Location: index.php');
     exit;
 }
@@ -28,14 +28,14 @@ $pengurangan = $result->fetch_assoc();
 $stmt->close();
 
 if (!$pengurangan) {
-    setFlash('error', 'Data pengurangan tidak ditemukan.');
+    setFlash('error', 'Data pengeluaran tidak ditemukan.');
     header('Location: index.php');
     exit;
 }
 
 // Validate status
 if ($pengurangan['status'] !== 'pending') {
-    setFlash('error', 'Hanya pengurangan dengan status pending yang dapat diedit.');
+    setFlash('error', 'Hanya pengeluaran dengan status pending yang dapat diedit.');
     header('Location: index.php');
     exit;
 }
@@ -47,7 +47,7 @@ if ($role !== 'superadmin' && $pengurangan['id_bagian'] != $id_bagian) {
     exit;
 }
 
-$pageTitle = 'Edit Pengurangan Barang';
+$pageTitle = 'Edit Pengeluaran Barang';
 
 $jenisList = $conn->query("SELECT id, nama_jenis FROM jenis_barang ORDER BY nama_jenis");
 $barangList = $conn->query("SELECT id, kode_barang, nama_barang, satuan, id_jenis_barang FROM barang ORDER BY nama_barang");
@@ -59,7 +59,7 @@ include BASE_PATH . '/includes/sidebar.php';
 <div class="main-content">
     <div class="topbar">
         <button class="sidebar-toggle-btn me-3" id="mainSidebarToggle"><i class="bi bi-list fs-4"></i></button>
-        <div class="topbar-title"><i class="bi bi-pencil-square me-2"></i>Edit Pengurangan Barang</div>
+        <div class="topbar-title"><i class="bi bi-pencil-square me-2"></i>Edit Pengeluaran Barang</div>
     </div>
     <div class="page-content">
         <div id="stokInfo" class="alert alert-info" style="display:none;max-width:700px">
@@ -103,14 +103,14 @@ include BASE_PATH . '/includes/sidebar.php';
             </div>
             <div class="card-footer bg-light text-muted small">
                 <i class="bi bi-info-circle me-1"></i>
-                <strong>FIFO:</strong> Pengurangan mengambil dari batch penerimaan <strong>tertua</strong> terlebih dahulu.
+                <strong>FIFO:</strong> Pengeluaran mengambil dari batch penerimaan <strong>tertua</strong> terlebih dahulu.
                 Jika batch pertama tidak cukup, akan dilanjutkan ke batch berikutnya.
             </div>
         </div>
 
         <div class="card" style="max-width:700px">
             <div class="card-header">
-                <i class="bi bi-pencil-square me-2"></i>Edit Form Pengurangan Barang
+                <i class="bi bi-pencil-square me-2"></i>Edit Form Pengeluaran Barang
                 <span class="badge bg-warning text-dark ms-2">Status: Pending</span>
             </div>
             <div class="card-body p-4">
@@ -189,7 +189,7 @@ include BASE_PATH . '/includes/sidebar.php';
                                 <span class="input-group-text">Rp</span>
                                 <input type="text" id="jumlahHargaDisplay" class="form-control bg-light" readonly value="0">
                             </div>
-                            <small class="text-muted" id="hargaNote">Total nilai pengurangan</small>
+                            <small class="text-muted" id="hargaNote">Total nilai pengeluaran</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Sumber Dana</label>
@@ -197,7 +197,7 @@ include BASE_PATH . '/includes/sidebar.php';
                         </div>
                     </div>
                     <div class="mt-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="bi bi-save me-1"></i>Update Pengurangan</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="bi bi-save me-1"></i>Update Pengeluaran</button>
                         <a href="index.php" class="btn btn-outline-secondary">Batal</a>
                     </div>
                 </form>
@@ -205,7 +205,7 @@ include BASE_PATH . '/includes/sidebar.php';
         </div>
         <div class="alert alert-info mt-3" style="max-width:700px">
             <i class="bi bi-info-circle me-2"></i>
-            <strong>FIFO:</strong> Pengurangan stok akan memotong dari batch penerimaan tertua terlebih dahulu secara otomatis saat disetujui.
+            <strong>FIFO:</strong> Pengeluaran stok akan memotong dari batch penerimaan tertua terlebih dahulu secara otomatis saat disetujui.
         </div>
     </div>
 </div>
@@ -311,7 +311,8 @@ include BASE_PATH . '/includes/sidebar.php';
         document.getElementById('jumlahHargaDisplay').value = '0';
         document.getElementById('hargaLabel').textContent = '(FIFO)';
         document.getElementById('hargaBreakdown').textContent = 'Harga dari batch yang digunakan';
-        document.getElementById('hargaNote').textContent = 'Total nilai pengurangan';
+        document.getElementById('hargaNote').textContent = 'Total nilai pengeluaran';
+            document.getElementById('hargaNote').textContent = 'Total nilai pengeluaran';
         document.getElementById('fifoDetailCard').style.display = 'none';
     }
 
@@ -325,10 +326,15 @@ include BASE_PATH . '/includes/sidebar.php';
 
     // Update harga berdasarkan FIFO
     let hargaTimer = null;
+    function getTanggalTransaksi() {
+        return document.querySelector('input[name="tanggal"]')?.value || '';
+    }
+
     async function updateHarga() {
         const jumlah = parseInt(document.getElementById('jumlahInput').value) || 0;
+        const tanggal = getTanggalTransaksi();
 
-        if (!currentIdBarang || jumlah <= 0) {
+        if (!currentIdBarang || jumlah <= 0 || !tanggal) {
             document.getElementById('hargaSatuanDisplay').value = '0';
             document.getElementById('jumlahHargaDisplay').value = '0';
             document.getElementById('fifoDetailCard').style.display = 'none';
@@ -352,7 +358,8 @@ include BASE_PATH . '/includes/sidebar.php';
                 const params = new URLSearchParams({
                     id_barang: currentIdBarang,
                     id_bagian: bagian,
-                    jumlah: jumlah
+                    jumlah: jumlah,
+                    tanggal: tanggal
                 });
 
                 const resp = await fetch('<?= BASE_URL ?>/api/get_harga_fifo.php?' + params.toString());
@@ -391,7 +398,8 @@ include BASE_PATH . '/includes/sidebar.php';
                         }
                     } else {
                         document.getElementById('fifoDetailCard').style.display = 'none';
-                        document.getElementById('hargaNote').textContent = 'Total nilai pengurangan';
+                        document.getElementById('hargaNote').textContent = 'Total nilai pengeluaran';
+                            document.getElementById('hargaNote').textContent = 'Total nilai pengeluaran';
                     }
                 } else {
                     document.getElementById('hargaSatuanDisplay').value = '0';
@@ -449,5 +457,11 @@ include BASE_PATH . '/includes/sidebar.php';
         div.textContent = text;
         return div.innerHTML;
     }
+
+    document.querySelector('input[name="tanggal"]')?.addEventListener('change', () => {
+        if (currentIdBarang) {
+            updateHarga();
+        }
+    });
 </script>
 <?php include BASE_PATH . '/includes/footer.php'; ?>
