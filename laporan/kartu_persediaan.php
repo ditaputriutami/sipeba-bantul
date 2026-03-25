@@ -293,7 +293,7 @@ if (isset($_GET['export']) && $f_id_barang) {
   <tr style="background-color:#dce6f1; font-weight:bold; text-align:center;">
     <th style="border:1px solid #000; padding:5px;">NO URUT INPUT</th>
     <th style="border:1px solid #000; padding:5px;">TANGGAL</th>
-    <th style="border:1px solid #000; padding:5px;">NOMOR DOKUMEN</th>
+    <th style="border:1px solid #000; padding:5px;">NO FAKTUR</th>
     <th style="border:1px solid #000; padding:5px;">UNIT MASUK</th>
     <th style="border:1px solid #000; padding:5px;">HARGA SATUAN (Rp)</th>
     <th style="border:1px solid #000; padding:5px;">JUMLAH HARGA (Rp)</th>
@@ -490,7 +490,7 @@ include BASE_PATH . '/includes/sidebar.php';
             <tr>
               <th rowspan="2">NO URUT INPUT</th>
               <th rowspan="2">TANGGAL</th>
-              <th rowspan="2">NOMOR DOKUMEN</th>
+              <th rowspan="2">NO FAKTUR</th>
               <th colspan="3" style="background-color:#cfe2ff;">MASUK</th>
               <th colspan="3" style="background-color:#f8d7da;">KELUAR</th>
               <th rowspan="2">SISA UNIT</th>

@@ -35,7 +35,7 @@ $stokList = $conn->query("
 
 $chartLabels     = json_encode(array_column($trendData, 'label'));
 $chartPenerimaan = json_encode(array_column($trendData, 'pen'));
-$chartPengurangan = json_encode(array_column($trendData, 'peng'));
+$chartPengeluaran = json_encode(array_column($trendData, 'peng'));
 
 include BASE_PATH . '/includes/header.php';
 include BASE_PATH . '/includes/sidebar.php';
@@ -94,7 +94,7 @@ include BASE_PATH . '/includes/sidebar.php';
           <div class="stat-card orange">
             <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-up text-white"></i></div>
             <div class="stat-value"><?= number_format($peng_count) ?></div>
-            <div class="stat-label">Pengurangan Disetujui</div>
+            <div class="stat-label">Pengeluaran Disetujui</div>
           </div>
         </a>
       </div>
@@ -154,7 +154,7 @@ include BASE_PATH . '/includes/sidebar.php';
       </div>
       <div class="col-auto">
         <a href="<?= BASE_URL ?>/transaksi/pengurangan/create.php" class="btn btn-warning">
-          <i class="bi bi-dash-circle me-1"></i>Tambah Pengurangan
+          <i class="bi bi-dash-circle me-1"></i>Tambah Pengeluaran
         </a>
       </div>
       <div class="col-auto">
@@ -174,7 +174,7 @@ new Chart(document.getElementById('trendChart'), {
     labels: $chartLabels,
     datasets: [
       { label:'Penerimaan', data:$chartPenerimaan, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)', borderWidth:2.5, pointRadius:5, tension:0.4, fill:true },
-      { label:'Pengurangan', data:$chartPengurangan, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.08)', borderWidth:2.5, pointRadius:5, tension:0.4, fill:true }
+      { label:'Pengeluaran', data:$chartPengeluaran, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.08)', borderWidth:2.5, pointRadius:5, tension:0.4, fill:true }
     ]
   },
   options: {

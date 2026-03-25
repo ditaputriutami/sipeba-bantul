@@ -7,7 +7,7 @@ $pageTitle = 'Dashboard Admin';
 $totalStok      = $conn->query("SELECT COALESCE(SUM(stok),0) FROM stok_current")->fetch_row()[0];
 $totalUser      = $conn->query("SELECT COUNT(*) FROM users WHERE role != 'superadmin'")->fetch_row()[0];
 $totalPenerimaan = $conn->query("SELECT COUNT(*) FROM penerimaan WHERE status='disetujui'")->fetch_row()[0];
-$totalPengurangan = $conn->query("SELECT COUNT(*) FROM pengurangan WHERE status='disetujui'")->fetch_row()[0];
+$totalPengeluaran = $conn->query("SELECT COUNT(*) FROM pengurangan WHERE status='disetujui'")->fetch_row()[0];
 $pendingAll     = $conn->query("SELECT (SELECT COUNT(*) FROM penerimaan WHERE status='pending')+(SELECT COUNT(*) FROM pengurangan WHERE status='pending')")->fetch_row()[0];
 
 // ---- Tren 6 bulan terakhir (penerimaan + pengurangan disetujui) ----
@@ -19,11 +19,11 @@ for ($i = 5; $i >= 0; $i--) {
 
   $rPen  = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM penerimaan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
   $rPeng = $conn->query("SELECT COALESCE(SUM(jumlah),0) FROM pengurangan WHERE status='disetujui' AND tanggal BETWEEN '$monthStart' AND '$monthEnd'")->fetch_row()[0];
-  $trendData[] = ['label' => $label, 'penerimaan' => (int)$rPen, 'pengurangan' => (int)$rPeng];
+  $trendData[] = ['label' => $label, 'penerimaan' => (int)$rPen, 'pengeluaran' => (int)$rPeng];
 }
 $chartLabels    = json_encode(array_column($trendData, 'label'));
 $chartPenerimaan = json_encode(array_column($trendData, 'penerimaan'));
-$chartPengurangan = json_encode(array_column($trendData, 'pengurangan'));
+$chartPengeluaran = json_encode(array_column($trendData, 'pengeluaran'));
 
 // ---- Distribusi per bagian ----
 $distribusi = $conn->query("
@@ -44,7 +44,7 @@ $recentTx = $conn->query("
     SELECT 'Penerimaan' as jenis, p.no_faktur as no_doc, b.nama_barang, p.jumlah, p.tanggal, bg.nama as bagian, p.status
     FROM penerimaan p JOIN barang b ON p.id_barang=b.id JOIN bagian bg ON p.id_bagian=bg.id
     UNION ALL
-    SELECT 'Pengurangan', pg.no_permintaan, b.nama_barang, pg.jumlah, pg.tanggal, bg.nama, pg.status
+    SELECT 'Pengeluaran', pg.no_permintaan, b.nama_barang, pg.jumlah, pg.tanggal, bg.nama, pg.status
     FROM pengurangan pg JOIN barang b ON pg.id_barang=b.id JOIN bagian bg ON pg.id_bagian=bg.id
     ORDER BY tanggal DESC LIMIT 10
 ");
@@ -111,8 +111,8 @@ include BASE_PATH . '/includes/sidebar.php';
         <a href="<?= BASE_URL ?>/transaksi/pengurangan/index.php?status=disetujui" class="stat-card-link">
           <div class="stat-card orange">
             <div class="stat-icon" style="background:rgba(255,255,255,0.15)"><i class="bi bi-box-arrow-up text-white"></i></div>
-            <div class="stat-value"><?= number_format($totalPengurangan) ?></div>
-            <div class="stat-label">Pengurangan Disetujui</div>
+            <div class="stat-value"><?= number_format($totalPengeluaran) ?></div>
+            <div class="stat-label">Pengeluaran Disetujui</div>
           </div>
         </a>
       </div>
@@ -225,8 +225,8 @@ new Chart(document.getElementById('trendChart'), {
         tension: 0.4, fill: true
       },
       {
-        label: 'Pengurangan',
-        data: $chartPengurangan,
+        label: 'Pengeluaran',
+        data: $chartPengeluaran,
         borderColor: '#f59e0b',
         backgroundColor: 'rgba(245,158,11,0.08)',
         borderWidth: 2.5,
