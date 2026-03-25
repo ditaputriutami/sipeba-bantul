@@ -227,6 +227,11 @@ if (isset($_GET['export'])) {
         } else {
           $kj_parts = array_pad($kj_parts, 7, '');
         }
+        // Hitung subtotal untuk jenis barang ini
+        $subtotal_jenis = 0;
+        foreach ($rows as $sr) {
+          $subtotal_jenis += $sr['jumlah'] * $sr['harga_satuan'];
+        }
       ?>
         <tr style="font-weight:bold; background-color:#f5f5f5;">
           <td align="center" style="border:1px solid #000; padding:5px;"><?= $no_jenis_group ?></td>
@@ -237,7 +242,7 @@ if (isset($_GET['export'])) {
           <td style="border:1px solid #000; padding:5px;"></td>
           <td style="border:1px solid #000; padding:5px;"></td>
           <td style="border:1px solid #000; padding:5px;"></td>
-          <td style="border:1px solid #000; padding:5px;"></td>
+          <td align="right" style="border:1px solid #000; padding:5px; font-weight:bold; mso-number-format:'#,##0';"><?= $subtotal_jenis > 0 ? $subtotal_jenis : '' ?></td>
           <td style="border:1px solid #000; padding:5px;"></td>
         </tr>
         <?php foreach ($rows as $r):
@@ -443,6 +448,11 @@ include BASE_PATH . '/includes/sidebar.php';
               } else {
                 $kj_parts = array_pad($kj_parts, 7, '');
               }
+              // Hitung subtotal untuk jenis barang ini
+              $subtotal_jenis = 0;
+              foreach ($rows as $sr) {
+                $subtotal_jenis += $sr['jumlah'] * $sr['harga_satuan'];
+              }
             ?>
               <tr class="table-secondary fw-bold text-dark">
                 <td class="text-center"><?= $no_jenis_group ?></td>
@@ -450,7 +460,9 @@ include BASE_PATH . '/includes/sidebar.php';
                 <?php foreach ($kj_parts as $kp): ?>
                   <td class="text-center text-nowrap" style="padding: 0 0.1rem;"><?= $kp ?></td>
                 <?php endforeach; ?>
-                <td colspan="5"></td>
+                <td colspan="3"></td>
+                <td class="text-end"><?= $subtotal_jenis > 0 ? number_format($subtotal_jenis, 0, ',', '.') : '' ?></td>
+                <td></td>
               </tr>
               <?php foreach ($rows as $r):
                 $total_rp = $r['jumlah'] * $r['harga_satuan'];
